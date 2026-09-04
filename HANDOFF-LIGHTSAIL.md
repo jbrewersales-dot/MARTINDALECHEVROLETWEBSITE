@@ -1,6 +1,6 @@
 # Martindale Chevrolet — AWS Lightsail Handoff
 
-This is the step-by-step guide to put the Martindale Chevrolet website on the internet using **AWS Lightsail**. It is written so that someone who has never touched a server can follow it. Do the steps in order. Each step tells you exactly where to click.
+This is the step-by-step guide to put the Martindale Chevrolet website on the internet using **AWS Lightsail** on a **Linux** server. If you're using a **Windows** server with Remote Desktop, use `HANDOFF-LIGHTSAIL-WINDOWS.md` instead. It is written so that someone who has never touched a server can follow it. Do the steps in order. Each step tells you exactly where to click.
 
 **Total time:** about 45 minutes the first time.
 **Cost:** about **$5 per month** (the smallest Ubuntu server plus a free static IP).
