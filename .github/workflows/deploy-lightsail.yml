@@ -1,0 +1,43 @@
+# Auto-publish the website to Lightsail whenever site/ changes on the main branch.
+#
+# OPTIONAL. The site works fine with just deploy/deploy.sh run by hand.
+# To turn this on, add two repository secrets (Settings -> Secrets and variables -> Actions):
+#   LIGHTSAIL_HOST     the server's static IP, e.g. 3.15.22.101
+#   LIGHTSAIL_SSH_KEY  the full text of the .pem key file downloaded from Lightsail
+# Until both exist, this workflow simply skips itself.
+
+name: Deploy site to Lightsail
+
+on:
+  push:
+    branches: [main]
+    paths: ["site/**"]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      LIGHTSAIL_HOST: ${{ secrets.LIGHTSAIL_HOST }}
+      LIGHTSAIL_SSH_KEY: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+    steps:
+      - name: Check secrets are set
+        id: check
+        run: |
+          if [ -z "$LIGHTSAIL_HOST" ] || [ -z "$LIGHTSAIL_SSH_KEY" ]; then
+            echo "LIGHTSAIL_HOST / LIGHTSAIL_SSH_KEY secrets not set — skipping deploy."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.ready == 'true'
+
+      - name: Publish site/ over SSH
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$LIGHTSAIL_SSH_KEY" > ~/.ssh/lightsail.pem
+          chmod 600 ~/.ssh/lightsail.pem
+          ./deploy/deploy.sh "$LIGHTSAIL_HOST" ~/.ssh/lightsail.pem

@@ -1,0 +1,85 @@
+/* Martindale Chevrolet — site styles */
+:root {
+  --gold: #d4a017;
+  --gold-dark: #b8860b;
+  --black: #111;
+  --gray-900: #1f1f1f;
+  --gray-700: #444;
+  --gray-300: #d9d9d9;
+  --gray-100: #f4f4f4;
+  --white: #fff;
+  --max: 1200px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  color: var(--gray-900);
+  background: var(--white);
+  line-height: 1.5;
+}
+img { max-width: 100%; display: block; }
+a { color: var(--gold-dark); }
+.container { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
+
+/* Header */
+.site-header { background: var(--black); color: var(--white); position: sticky; top: 0; z-index: 10; }
+.site-header .container { display: flex; align-items: center; justify-content: space-between; height: 70px; }
+.brand { color: var(--white); text-decoration: none; font-weight: 700; font-size: 1.25rem; letter-spacing: .5px; }
+.brand span { color: var(--gold); }
+.nav { display: flex; gap: 24px; list-style: none; margin: 0; padding: 0; }
+.nav a { color: var(--white); text-decoration: none; font-weight: 500; }
+.nav a:hover, .nav a.active { color: var(--gold); }
+.nav-toggle { display: none; background: none; border: 0; color: var(--white); font-size: 1.75rem; cursor: pointer; }
+
+/* Hero */
+.hero { background: linear-gradient(rgba(0,0,0,.65), rgba(0,0,0,.65)), var(--gray-900); color: var(--white); padding: 90px 0; text-align: center; }
+.hero h1 { font-size: clamp(2rem, 5vw, 3.25rem); margin: 0 0 12px; }
+.hero p { font-size: 1.2rem; margin: 0 0 28px; color: var(--gray-300); }
+
+/* Buttons */
+.btn { display: inline-block; padding: 12px 24px; border-radius: 6px; font-weight: 600; text-decoration: none; border: 2px solid var(--gold); cursor: pointer; font-size: 1rem; }
+.btn-primary { background: var(--gold); color: var(--black); }
+.btn-primary:hover { background: var(--gold-dark); border-color: var(--gold-dark); }
+.btn-outline { background: transparent; color: var(--white); }
+.btn-outline:hover { background: var(--gold); color: var(--black); }
+.btn + .btn { margin-left: 12px; }
+
+/* Sections */
+section { padding: 60px 0; }
+section.alt { background: var(--gray-100); }
+h2 { font-size: 2rem; margin: 0 0 24px; }
+.grid { display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.card { background: var(--white); border: 1px solid var(--gray-300); border-radius: 8px; overflow: hidden; }
+.card-body { padding: 18px; }
+.card h3 { margin: 0 0 8px; }
+.card .price { color: var(--gold-dark); font-weight: 700; font-size: 1.25rem; }
+.card .meta { color: var(--gray-700); font-size: .95rem; }
+.card-img { aspect-ratio: 16 / 10; background: var(--gray-300); display: flex; align-items: center; justify-content: center; color: var(--gray-700); }
+
+/* Forms */
+form { display: grid; gap: 14px; max-width: 560px; }
+label { font-weight: 600; }
+input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--gray-300); border-radius: 6px; font: inherit; }
+textarea { min-height: 120px; }
+
+/* Filters */
+.filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+.filters select, .filters input { width: auto; min-width: 160px; }
+
+/* Footer */
+.site-footer { background: var(--black); color: var(--gray-300); padding: 40px 0; }
+.site-footer .grid { gap: 32px; }
+.site-footer h4 { color: var(--gold); margin: 0 0 10px; }
+.site-footer a { color: var(--gray-300); }
+.site-footer .copy { margin-top: 30px; font-size: .85rem; text-align: center; }
+
+/* Mobile */
+@media (max-width: 760px) {
+  .nav-toggle { display: block; }
+  .nav { display: none; position: absolute; top: 70px; left: 0; right: 0; background: var(--black); flex-direction: column; padding: 16px 20px; }
+  .nav.open { display: flex; }
+  .btn + .btn { margin-left: 0; margin-top: 12px; }
+}

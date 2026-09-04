@@ -1,0 +1,74 @@
+[
+  {
+    "stock": "M1001",
+    "year": 2025,
+    "make": "Chevrolet",
+    "model": "Silverado 1500",
+    "trim": "LT Crew Cab 4WD",
+    "type": "Truck",
+    "condition": "New",
+    "price": 52995,
+    "miles": 12,
+    "image": ""
+  },
+  {
+    "stock": "M1002",
+    "year": 2025,
+    "make": "Chevrolet",
+    "model": "Equinox",
+    "trim": "RS AWD",
+    "type": "SUV",
+    "condition": "New",
+    "price": 34495,
+    "miles": 8,
+    "image": ""
+  },
+  {
+    "stock": "M1003",
+    "year": 2025,
+    "make": "Chevrolet",
+    "model": "Trax",
+    "trim": "LT",
+    "type": "SUV",
+    "condition": "New",
+    "price": 24995,
+    "miles": 15,
+    "image": ""
+  },
+  {
+    "stock": "U2001",
+    "year": 2021,
+    "make": "Chevrolet",
+    "model": "Tahoe",
+    "trim": "LT 4WD",
+    "type": "SUV",
+    "condition": "Used",
+    "price": 44900,
+    "miles": 48200,
+    "image": ""
+  },
+  {
+    "stock": "U2002",
+    "year": 2020,
+    "make": "Ford",
+    "model": "F-150",
+    "trim": "XLT SuperCrew",
+    "type": "Truck",
+    "condition": "Used",
+    "price": 31500,
+    "miles": 61400,
+    "image": ""
+  },
+  {
+    "stock": "U2003",
+    "year": 2022,
+    "make": "Chevrolet",
+    "model": "Malibu",
+    "trim": "LT",
+    "type": "Car",
+    "condition": "Used",
+    "price": 19900,
+    "miles": 27800,
+    "image": ""
+  }
+]
