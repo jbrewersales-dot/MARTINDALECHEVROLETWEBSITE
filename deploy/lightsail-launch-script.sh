@@ -40,7 +40,6 @@ HTML
 cat > /etc/nginx/sites-available/martindale <<'NGINX'
 server {
     listen 80 default_server;
-    listen [::]:80 default_server;
     server_name _;
     root /var/www/martindale;
     index index.html;
@@ -64,6 +63,10 @@ server {
     }
 }
 NGINX
+
+# If something else (usually Apache from a Bitnami/LAMP image) is holding port 80, turn it off.
+systemctl disable --now apache2 2>/dev/null || true
+if [ -x /opt/bitnami/ctlscript.sh ]; then /opt/bitnami/ctlscript.sh stop || true; fi
 
 ln -sf /etc/nginx/sites-available/martindale /etc/nginx/sites-enabled/martindale
 rm -f /etc/nginx/sites-enabled/default
