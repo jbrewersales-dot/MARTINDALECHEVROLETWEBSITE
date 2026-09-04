@@ -67,6 +67,9 @@ NGINX
 # If something else (usually Apache from a Bitnami/LAMP image) is holding port 80, turn it off.
 systemctl disable --now apache2 2>/dev/null || true
 if [ -x /opt/bitnami/ctlscript.sh ]; then /opt/bitnami/ctlscript.sh stop || true; fi
+# Anything else still sitting on port 80 (a stray web server) gets stopped so nginx can bind.
+fuser -k 80/tcp 2>/dev/null || true
+sleep 1
 
 ln -sf /etc/nginx/sites-available/martindale /etc/nginx/sites-enabled/martindale
 rm -f /etc/nginx/sites-enabled/default

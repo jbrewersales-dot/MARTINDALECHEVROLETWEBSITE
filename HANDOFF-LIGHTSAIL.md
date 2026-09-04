@@ -239,6 +239,14 @@ Open the browser SSH terminal (instance → Connect) and run `sudo cat /var/log/
 `curl -fsSL https://raw.githubusercontent.com/jbrewersales-dot/MARTINDALECHEVROLETWEBSITE/main/deploy/lightsail-launch-script.sh | sudo bash`
 (or paste the file in with `nano` as described in Step 8 if the repo is private).
 
+**The setup script ends with "Job for nginx.service failed" / "Address already in use".**
+Something else on the server grabbed port 80 before nginx could. Paste this in the browser terminal:
+`sudo systemctl disable --now apache2 2>/dev/null; sudo fuser -k 80/tcp; sleep 2; sudo systemctl restart nginx && echo OK`
+If it prints OK you're fine. Then continue with Step 6.
+
+**"Could not get lock /var/lib/dpkg/lock-frontend".**
+Ubuntu is installing its own security updates in the background. Harmless. Wait a minute and run the same line again.
+
 **deploy.sh (alternative method) says "Permission denied (publickey)".**
 Wrong key file or wrong region's key. Re-download the key for the **same region** as the instance (see the alternative in Step 6) and pass its path as the second argument.
 
