@@ -81,37 +81,50 @@ If you get "can't connect", wait another couple of minutes and try again. If it 
 
 ---
 
-## Step 5 — Download your SSH key
+## Step 5 — Open the server's terminal in your browser
 
-The SSH key is the "password file" that lets your computer talk to the server.
+No software needed on your computer for this.
 
-1. In Lightsail, click your **account name** (top right) → **Account**.
-2. Click the **SSH keys** tab.
-3. Next to the **Default key** for your region, click **Download**.
-4. It saves a file named like `LightsailDefaultKey-us-east-2.pem`. Leave it in your **Downloads** folder (the deploy script looks there by default). **Never share this file or put it in the repo.**
+1. In Lightsail, click your instance `martindale-web`.
+2. Click the orange **Connect using SSH** button (or the little terminal icon on the instance card).
+3. A black window opens in a new browser tab. That's the server's command line. You type commands there and press Enter.
+
+To paste into that window: click the **clipboard icon** at the bottom-right of the tab, paste your text into the box, then right-click inside the black area and choose Paste (or press Ctrl+Shift+V).
 
 ---
 
 ## Step 6 — Publish the website
 
-In your terminal (Terminal on Mac, Git Bash on Windows):
+In the browser terminal from Step 5, paste this one line and press Enter:
 
 ```bash
-cd path/to/MARTINDALECHEVROLETWEBSITE     # the folder you downloaded
-./deploy/deploy.sh YOUR-IP
+curl -fsSL https://raw.githubusercontent.com/jbrewersales-dot/MARTINDALECHEVROLETWEBSITE/main/deploy/update-site.sh | sudo bash
 ```
 
-If your key file is not in `~/Downloads` or has a different name, tell the script where it is:
+It downloads the latest copy of this repo from GitHub and copies the `site/` folder onto the server. It ends with "Done."
+
+On your own computer, open `http://YOUR-IP` and press **Ctrl+Shift+R** (hard refresh). You should now see the real Martindale Chevrolet homepage, and the **Inventory** page should list vehicles.
+
+**That's the whole publishing routine.** Every time you change something in `site/` on GitHub, open the browser terminal and paste that same line again.
+
+> **If the repo is private,** that `curl` line can't download. Make the repo public (GitHub → Settings → General → Danger Zone → Change visibility), or use the "from your own computer" method below.
+
+<details>
+<summary><strong>Alternative: publish from your own computer with deploy.sh</strong> (needs the SSH key and a terminal)</summary>
+
+1. Download the SSH key: Lightsail → your **account name** (top right) → **Account** → **SSH keys** tab → **Download** the default key for your region. It's a file like `LightsailDefaultKey-us-east-2.pem`. Leave it in Downloads. Never share it or put it in the repo.
+2. Open a terminal (Mac: Terminal. Windows: install Git for Windows and use Git Bash).
+3. Run:
 
 ```bash
+cd path/to/MARTINDALECHEVROLETWEBSITE
+./deploy/deploy.sh YOUR-IP
+# or, if the key is somewhere else:
 ./deploy/deploy.sh YOUR-IP /full/path/to/LightsailDefaultKey-us-east-2.pem
 ```
 
-The first time, it may ask `Are you sure you want to continue connecting?` — type `yes` and press Enter.
-
-When it finishes, open `http://YOUR-IP` again and press **Ctrl+Shift+R** (hard refresh). You should now see the real Martindale Chevrolet homepage, and the **Inventory** page should list vehicles.
-
-**That's the whole publishing process.** Every time you change something in `site/`, run that one command again.
+Type `yes` if asked "Are you sure you want to continue connecting?". This copies your local `site/` folder up without going through GitHub.
+</details>
 
 ---
 
@@ -134,8 +147,8 @@ DNS changes take anywhere from 5 minutes to a few hours. Test by opening `http:/
 
 Do this **after** Step 7 works. It is free and renews itself automatically.
 
-1. In Lightsail, click your instance, then click the little **terminal icon** (or the **"Connect using SSH"** button). A black terminal window opens in your browser. You are now typing on the server.
-2. Paste these lines one at a time (right-click → paste in that window, or use the clipboard icon in the bottom right):
+1. Open the browser terminal (Step 5).
+2. Paste these lines one at a time:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/jbrewersales-dot/MARTINDALECHEVROLETWEBSITE/main/deploy/enable-https.sh -o enable-https.sh
@@ -156,12 +169,12 @@ It takes about 30 seconds. When it says **"HTTPS is on"**, open `https://yourdom
 1. Open `site/inventory/vehicles.json` in any text editor (Notepad, TextEdit, VS Code).
 2. Copy one of the existing `{ ... }` blocks, paste it, and change the values. Keep the commas between blocks. `site/README-SITE.md` shows the exact format.
 3. Put the photo in `site/images/` and set `"image": "images/filename.jpg"`.
-4. Run `./deploy/deploy.sh YOUR-IP`. Refresh the site.
+4. Commit to GitHub, then run the Step 6 line in the browser terminal. Refresh the site.
 
 Tip: paste the whole file into https://jsonlint.com before deploying. One missing comma makes the inventory page show "Inventory is temporarily unavailable".
 
 ### Change words on a page
-Edit the matching `.html` file in `site/`, then deploy. Same command every time.
+Edit the matching `.html` file in `site/` on GitHub, then run the Step 6 line. Same line every time.
 
 ### Vehicle photos
 Keep them under about 300 KB each (resize to 1200px wide). Big photos make the page slow on phones, which is most of your visitors.
@@ -226,11 +239,11 @@ Open the browser SSH terminal (instance → Connect) and run `sudo cat /var/log/
 `curl -fsSL https://raw.githubusercontent.com/jbrewersales-dot/MARTINDALECHEVROLETWEBSITE/main/deploy/lightsail-launch-script.sh | sudo bash`
 (or paste the file in with `nano` as described in Step 8 if the repo is private).
 
-**deploy.sh says "Permission denied (publickey)".**
-Wrong key file or wrong region's key. Re-download the key for the **same region** as the instance (Step 5) and pass its path as the second argument.
+**deploy.sh (alternative method) says "Permission denied (publickey)".**
+Wrong key file or wrong region's key. Re-download the key for the **same region** as the instance (see the alternative in Step 6) and pass its path as the second argument.
 
-**deploy.sh says "rsync: command not found" on the server.**
-The launch script installs rsync. If you built the server without the launch script, run `sudo apt-get install -y rsync` in the browser SSH terminal.
+**The Step 6 line fails with "404" or "Not Found".**
+The repo is private (GitHub can't hand out the file) or the branch name is wrong. Make the repo public, or use the deploy.sh alternative in Step 6.
 
 **Site shows but the Inventory page says "temporarily unavailable".**
 `vehicles.json` has a typo (usually a missing or extra comma). Paste it into jsonlint.com, fix, redeploy.
@@ -254,7 +267,8 @@ It's disposable. Delete the instance, repeat Steps 1–6 (about 10 minutes), re-
 | `site/inventory/vehicles.json` | The vehicle list. |
 | `site/README-SITE.md` | The original notes on the site's files and inventory format. |
 | `deploy/lightsail-launch-script.sh` | Paste into Lightsail when creating the server. |
-| `deploy/deploy.sh` | Run from your computer to publish `site/`. |
+| `deploy/update-site.sh` | Run on the server (browser terminal) to publish the latest `site/` from GitHub. |
+| `deploy/deploy.sh` | Alternative: run from your own computer to publish `site/` over SSH. |
 | `deploy/enable-https.sh` | Run on the server once to turn on HTTPS. |
 | `deploy/nginx/martindale.conf` | The web server config (reference copy of what the launch script installs). |
 | `.github/workflows/deploy-lightsail.yml` | Optional auto-publish from GitHub. |

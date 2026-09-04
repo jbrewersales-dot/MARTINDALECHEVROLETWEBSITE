@@ -25,7 +25,8 @@ Both are click-by-click guides. Pick one.
 # 1. edit anything in site/ (vehicles: site/inventory/vehicles.json)
 # 2. publish
 #    Windows server: remote in, run deploy/windows/update-site.ps1
-#    Linux server:   ./deploy/deploy.sh YOUR-SERVER-IP
+#    Linux server:   paste the deploy/update-site.sh one-liner into the Lightsail browser terminal
+#                    (or ./deploy/deploy.sh YOUR-SERVER-IP from your own computer)
 # 3. refresh the browser (Ctrl+Shift+R)
 ```
 
