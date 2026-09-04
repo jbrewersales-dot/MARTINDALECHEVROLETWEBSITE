@@ -43,7 +43,7 @@ Save the file, refresh the page, done. Leave `"image": ""` if you don't have a p
 Search the files for these and replace them with the real thing:
 
 - ~~Street address, phone numbers, hours~~ — already filled in (521 US Highway 61 · Sales 573-748-2512 · Service 573-748-2241 · Text 573-620-5630 · Mon–Fri 8–5, Sat by appointment)
-- `sales@example.com` — real email
+- ~~Email~~ — already filled in (jbrewersales@gmail.com)
 - Team photos in `about.html`
 - Logo is at `images/logo.png` if you want it in the header (currently a text wordmark)
 

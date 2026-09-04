@@ -174,9 +174,9 @@ Things that were **already filled in** from the dealership facts in the design p
 - Address: 521 US Highway 61, New Madrid, MO 63869
 - Sales 573-748-2512 · Service 573-748-2241 · Text 573-620-5630
 - Hours: Mon–Fri 8–5, Sat by appointment, Sun closed
+- Email: jbrewersales@gmail.com (home page, contact page, every footer)
 
 Things **you still need to do** (search `site/` for each):
-- [ ] `sales@example.com` in `site/contact.html` → the real email address.
 - [ ] The **Contact** and **Service** forms don't send anywhere yet. Easiest fix with no server code: sign up at **formspree.io** (free), get your form URL, and in `contact.html` and `service.html` change `action="#"` to that URL. Then delete the "Form submission is not connected yet" line under each form.
 - [ ] Replace the sample vehicles in `site/inventory/vehicles.json` with real ones.
 - [ ] Team photos and names on `site/about.html`.
