@@ -1,0 +1,100 @@
+<%- include('_head', { warm: true }) %>
+<main class="wrap" style="--max:560px">
+  <div class="flow-head"><button class="back" id="back" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button><span class="step" id="step-lab"></span></div>
+  <div class="progress" id="progress"><i></i><i></i><i></i><i></i><i></i></div>
+
+  <% if (vehicle) { %><div class="card" style="display:flex;gap:12px;align-items:center;padding:10px 12px;margin-bottom:18px"><div class="photo" style="width:64px;height:48px;border-radius:8px;flex:none"><% if (vehicle.photo) { %><img src="<%= vehicle.photo %>" alt=""><% } %></div><div><b style="font-size:14px"><%= vehicle.title %></b><div class="meta"><%= u.money(vehicle.price) %> · about <%= u.money(vehicle.payment) %>/mo · Stock #<%= vehicle.stock %></div></div></div><% } %>
+
+  <!-- intro -->
+  <section class="screen on" data-step="0">
+    <h1 class="q">Apply for financing.</h1>
+    <p class="q-sub">Five short screens. Most folks finish in about four minutes.</p>
+    <div class="card card-pad"><div class="label" style="margin-bottom:6px">Have these handy</div>
+      <div class="have"><i>1</i>Driver's license</div><div class="have"><i>2</i>Social Security number</div><div class="have"><i>3</i>Your monthly income, roughly</div></div>
+    <div class="notice" style="margin-top:14px"><b>Locked up tight.</b> Your SSN and license are encrypted the moment you send them, only <%= DEALER.financeName %> in finance can see them, and nothing touches your credit until you pick a vehicle and say OK.</div>
+    <button class="btn btn-gold" style="margin-top:18px" data-next>Start my application</button>
+    <p class="flow-foot">Stop anytime — we save your spot on this phone.</p>
+  </section>
+
+  <!-- step 1 -->
+  <section class="screen" data-step="1">
+    <h1 class="q">First, about you.</h1>
+    <div class="grid2"><label class="field"><span class="label">First name</span><input class="input" name="first_name" autocomplete="given-name"></label><label class="field"><span class="label">Last name</span><input class="input" name="last_name" autocomplete="family-name"></label></div>
+    <label class="field"><span class="label">Date of birth</span><input class="input" name="dob" type="date" max="2010-01-01"></label>
+    <label class="field"><span class="label">Cell phone</span><input class="input" name="phone" type="tel" inputmode="tel" autocomplete="tel"><div class="help">We text you updates here. No robo-calls.</div></label>
+    <label class="field"><span class="label">Email <span class="muted">(optional)</span></span><input class="input" name="email" type="email" autocomplete="email"></label>
+    <div class="error form-error"></div>
+    <button class="btn btn-gold" data-next>Next</button>
+  </section>
+
+  <!-- step 2 -->
+  <section class="screen" data-step="2">
+    <h1 class="q">Where do you live?</h1>
+    <div class="label" style="margin-bottom:6px">Do you rent or own?</div>
+    <div class="seg" id="housing"><button data-val="rent">Rent</button><button data-val="own">Own</button><button data-val="family">Live with family</button></div>
+    <label class="field" style="margin-top:16px"><span class="label">Monthly housing payment</span><input class="input" name="housing_payment" inputmode="numeric" data-money placeholder="0 if none"></label>
+    <label class="field"><span class="label">Street address</span><input class="input" name="address1" autocomplete="street-address"></label>
+    <div class="grid2"><label class="field"><span class="label">City</span><input class="input" name="city" autocomplete="address-level2"></label><label class="field"><span class="label">ZIP</span><input class="input" name="zip" inputmode="numeric" autocomplete="postal-code"></label></div>
+    <label class="field"><span class="label">State</span><select class="input" name="state"><option value="MO">Missouri</option><option value="AR">Arkansas</option><option value="TN">Tennessee</option><option value="KY">Kentucky</option><option value="IL">Illinois</option><option value="">Other</option></select></label>
+    <label class="field"><span class="label">How long at this address?</span><select class="input" name="months_at_address"><option value="">Pick one</option><option value="6">Under a year</option><option value="18">1–2 years</option><option value="36">3–4 years</option><option value="60">5+ years</option></select></label>
+    <label class="field hide" id="prev-wrap"><span class="label">Previous address</span><input class="input" name="prev_address" placeholder="Street, city, state"></label>
+    <div class="error form-error"></div>
+    <button class="btn btn-gold" data-next>Next</button>
+  </section>
+
+  <!-- step 3 -->
+  <section class="screen" data-step="3">
+    <h1 class="q">Your ID.</h1>
+    <p class="q-sub">Snap your license so <%= DEALER.financeName %> can confirm your name and address. Optional, but it speeds things up.</p>
+    <div class="grid2">
+      <label class="idslot" id="slot-front"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Front of license<input type="file" accept="image/*" capture="environment" data-side="front"></label>
+      <label class="idslot" id="slot-back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Back of license<input type="file" accept="image/*" capture="environment" data-side="back"></label>
+    </div>
+    <label class="field" style="margin-top:18px"><span class="label">Social Security number</span>
+      <div style="position:relative"><input class="input" name="ssn" inputmode="numeric" autocomplete="off" placeholder="••• – •• – ••••" style="padding-right:48px;letter-spacing:.08em"><button type="button" class="circ" id="ssn-eye" style="right:8px;top:9px;box-shadow:none;background:none" aria-label="Show or hide"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+    </label>
+    <div class="notice"><b>Why we ask.</b> Lenders need it to check your credit history. It's encrypted right away, never shown in full to anyone but finance, and never sold.</div>
+    <div class="error form-error"></div>
+    <button class="btn btn-gold" style="margin-top:16px" data-next>Next</button>
+  </section>
+
+  <!-- step 4 -->
+  <section class="screen" data-step="4">
+    <h1 class="q">Where do you work?</h1>
+    <label class="field"><span class="label">Employer</span><input class="input" name="employer" autocomplete="organization" placeholder="Company, or 'self-employed'"></label>
+    <label class="field"><span class="label">What do you do there?</span><input class="input" name="job_title" autocomplete="organization-title"></label>
+    <label class="field"><span class="label">Monthly income before taxes</span><input class="input" name="monthly_income" inputmode="numeric" data-money></label>
+    <label class="field"><span class="label">How long there?</span><select class="input" name="months_at_job"><option value="">Pick one</option><option value="6">Under a year</option><option value="18">1–2 years</option><option value="36">3–4 years</option><option value="60">5+ years</option></select></label>
+    <label class="field"><span class="label">Other monthly income <span class="muted">(optional)</span></span><input class="input" name="other_income" inputmode="numeric" data-money><div class="help">Child support, disability, side work — count it.</div></label>
+    <div class="error form-error"></div>
+    <button class="btn btn-gold" data-next>Next</button>
+  </section>
+
+  <!-- step 5 -->
+  <section class="screen" data-step="5">
+    <h1 class="q">Check it and send.</h1>
+    <div class="card card-pad summary" id="summary"></div>
+    <label class="check" style="margin-top:18px"><input type="checkbox" id="consent"><span>I'm telling the truth on this application, and I'm OK with Martindale Chevrolet and the lenders it works with pulling my credit report to see about financing. I know that's a hard inquiry.</span></label>
+    <div class="error form-error"></div>
+    <button class="btn btn-gold" style="margin-top:18px" id="send">Send my application</button>
+    <p class="flow-foot">Most folks hear back within the hour, Mon–Fri 8–5. <a href="/privacy">Privacy</a></p>
+  </section>
+
+  <!-- done -->
+  <section class="screen" data-step="6">
+    <div class="done-check"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg></div>
+    <h1 class="q center">You're on the books, <span id="done-name"></span>.</h1>
+    <p class="q-sub center"><%= DEALER.financeName %> will text you from <b><%= DEALER.textPhone %></b> within the hour, Mon–Fri 8–5. Save the number so you know it's us.</p>
+    <div class="timeline">
+      <div class="tl"><i>1</i><div><b>We run it by our lenders</b><span>Missouri lenders we know by name</span></div></div>
+      <div class="tl"><i>2</i><div><b>You get a real number</b><span>Payment, down payment, the works</span></div></div>
+      <div class="tl"><i>3</i><div><b>Pick your vehicle</b><span>Or keep the one you chose</span></div></div>
+    </div>
+    <div class="card card-pad staff"><div class="avatar"><%= DEALER.financeName[0] %></div><div class="grow"><b><%= DEALER.financeName %> · Finance</b><div class="meta">Here Mon–Fri 8–5</div></div><a class="btn btn-gold btn-sm" href="sms:<%= DEALER.textTel %>">Text <%= DEALER.financeName %></a></div>
+    <a class="btn btn-outline" style="margin-top:14px" href="/inventory?maxPrice=20000">Browse under $20K while you wait</a>
+  </section>
+
+  <p class="flow-foot" id="stuck">Stuck? Text <%= DEALER.financeName %>: <a href="sms:<%= DEALER.textTel %>"><%= DEALER.textPhone %></a></p>
+</main>
+<script>window.APPLY = { stock: "<%= vehicle ? vehicle.stock : '' %>" };</script>
+<%- include('_foot', { scripts: '<script src="/public/js/apply.js?v=1"></script>' }) %>

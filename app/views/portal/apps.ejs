@@ -1,0 +1,19 @@
+<%- include('_head') %>
+<div class="p-head"><div><h1>Credit applications</h1><div class="sub">Anything gold is waiting on us. Aim to text back within the hour.</div></div><div class="grow"></div>
+  <form class="search" method="get"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input name="q" placeholder="Name or phone" value="<%= term %>"><% if (status) { %><input type="hidden" name="status" value="<%= status %>"><% } %></form>
+  <a class="btn btn-outline" href="/portal/apps.csv">Export CSV</a></div>
+<div class="p-body"><%- include('_flash') %>
+  <div class="kpis"><div class="kpi"><div class="n"><%= kpi.today %></div><div class="l">New today</div></div><div class="kpi"><div class="n rust"><%= kpi.docs %></div><div class="l">Awaiting docs</div></div><div class="kpi"><div class="n green"><%= kpi.approvedWeek %></div><div class="l">Approved this week</div></div><div class="kpi"><div class="n"><%= kpi.median == null ? '—' : kpi.median < 1 ? '<1m' : kpi.median + 'm' %></div><div class="l">Median first response (30d)</div></div></div>
+  <div class="chips" style="margin-bottom:14px"><a class="chip <%= !status ? 'on' : '' %>" href="/portal/apps">All</a><% for (const [k, l] of Object.entries(APP_STATUSES)) { %><a class="chip <%= status === k ? 'on' : '' %>" href="/portal/apps?status=<%= k %>"><%= l %></a><% } %><% if (kpi.drafts) { %><span class="chip" style="cursor:default" title="Started on the website but not sent yet"><%= kpi.drafts %> unfinished on the site</span><% } %></div>
+  <div class="tbl"><table><thead><tr><th>Applicant</th><th>Vehicle interest</th><th class="hide-m">Income</th><th>Submitted</th><th class="hide-m">Assigned</th><th>Status</th></tr></thead><tbody>
+  <% if (!apps.length) { %><tr><td colspan="6" class="muted" style="padding:30px;text-align:center">No applications yet. When someone applies on the website, it shows up here and you get an email.</td></tr><% } %>
+  <% for (const a of apps) { %>
+  <tr class="link <%= a.status === 'new' ? 'new' : '' %> <%= a.status === 'turned_down' ? 'dim' : '' %>" onclick="location.href='/portal/apps/<%= a.id %>'">
+    <td><div class="t"><%= a.first_name %> <%= a.last_name %></div><div class="s"><%= u.fmtPhone(a.phone) %><%= a.city ? ' · ' + a.city : '' %></div></td>
+    <td><% if (a.vehicle) { %><div class="t"><%= a.vehicle.shortTitle %></div><div class="s"><%= u.money(a.vehicle.price) %> · ~<%= u.money(a.vehicle.payment) %>/mo</div><% } else { %><span class="muted">Not tied to a vehicle</span><% } %></td>
+    <td class="hide-m"><%= u.money(a.income) %>/mo<% if (a.ptiLabel) { %><div class="s <%= a.ptiClass %>">PTI <%= a.ptiLabel %></div><% } %></td>
+    <td><div><%= u.timeAgo(a.submitted_at) %></div><div class="s <%= a.slaLate ? 'rust' : '' %>"><%= a.status === 'new' && !a.first_response_at ? (a.slaLate ? 'Overdue — respond now' : 'Respond by ' + a.slaLabel) : u.fmtTime(a.submitted_at) %></div></td>
+    <td class="hide-m"><%= a.assignee ? a.assignee.name : '—' %></td>
+    <td><span class="pill pill-<%= PILL[a.status] %>"><%= APP_STATUSES[a.status] %></span></td>
+  </tr><% } %></tbody></table></div>
+</div><%- include('_foot') %>

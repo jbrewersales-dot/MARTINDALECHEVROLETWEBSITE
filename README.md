@@ -1,39 +1,23 @@
-# Martindale Chevrolet Website
+# Martindale Chevrolet — website, credit application, staff portal
 
-Website for Martindale Chevrolet, 521 US Highway 61, New Madrid, MO 63869, packaged to run on **AWS Lightsail**.
+The dealership site for Martindale Chevrolet, 521 US Highway 61, New Madrid, MO 63869. Built from the design package in `design/`. Runs on one small AWS Lightsail Ubuntu server.
 
-**Start here:**
-- Windows server + Remote Desktop (RDP): [`HANDOFF-LIGHTSAIL-WINDOWS.md`](HANDOFF-LIGHTSAIL-WINDOWS.md) — about $20/month.
-- Linux server + SSH: [`HANDOFF-LIGHTSAIL.md`](HANDOFF-LIGHTSAIL.md) — about $5/month.
+**Start here → [`HANDOFF-LIGHTSAIL.md`](HANDOFF-LIGHTSAIL.md)** — install, log in, email alerts, HTTPS, and how to use the portal.
 
-Both are click-by-click guides. Pick one.
+## What's in here
 
-## What's in this repo
-
-| Folder / file | What it is |
+| Folder | What |
 |---|---|
-| `site/` | The website. Plain HTML, CSS and JavaScript, no build step. Vehicles live in `site/inventory/vehicles.json`. |
-| `deploy/` | Linux scripts: set up the server, publish the site, turn on HTTPS. |
-| `deploy/windows/` | The same three steps as PowerShell scripts for a Windows/IIS server. |
-| `.github/workflows/` | Optional: auto-publish to Lightsail when `site/` changes on `main`. |
-| `design/` | Phase 2 design package: staff portal, credit application, buy-online deal builder, vAuto inventory feed. Open `design/Martindale Explorations.dc.html` in a browser to see it. |
-| `docs/PHASE-2-PORTAL-ON-LIGHTSAIL.md` | How the phase 2 app would be hosted on Lightsail, with costs and one security caveat. |
+| `app/` | The whole thing: customer site + credit application + `/portal` staff portal. Node.js 22, Express, SQLite (built into Node), no other services. |
+| `deploy/` | Scripts you paste into the Lightsail terminal: `setup.sh`, `update-site.sh`, `configure-email.sh`, `enable-https.sh`. |
+| `design/` | The design handoff the site was built from (open `design/Martindale Explorations.dc.html` in a browser). |
+| `docs/` | What's built and what the design still calls for. |
 
-## Updating the site in three lines
+## Run it on your own computer
 
 ```bash
-# 1. edit anything in site/ (vehicles: site/inventory/vehicles.json)
-# 2. publish
-#    Windows server: remote in, run deploy/windows/update-site.ps1
-#    Linux server:   paste the deploy/update-site.sh one-liner into the Lightsail browser terminal
-#                    (or ./deploy/deploy.sh YOUR-SERVER-IP from your own computer)
-# 3. refresh the browser (Ctrl+Shift+R)
-```
-
-## Preview on your own computer
-
-```bash
-cd site
-python3 -m http.server 8000
-# open http://localhost:8000
+cd app
+npm install
+cp .env.example .env     # edit ADMIN_PASSWORD and APP_ENCRYPTION_KEY (64 hex chars)
+npm start                # http://localhost:3000  ·  portal at /portal
 ```

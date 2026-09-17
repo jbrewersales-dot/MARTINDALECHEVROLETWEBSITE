@@ -1,45 +1,30 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # =====================================================================
-#  Publish / update the website ON THE SERVER, straight from GitHub.
+#  Update the running app to the latest code on GitHub.
 #
-#  Run this in the Lightsail browser SSH window (instance -> Connect),
-#  every time you want the live site to match GitHub:
+#  Paste into the Lightsail browser terminal:
+#    curl -fsSL https://raw.githubusercontent.com/jbrewersales-dot/MARTINDALECHEVROLETWEBSITE/main/deploy/update-site.sh | sudo bash
 #
-#     curl -fsSL https://raw.githubusercontent.com/jbrewersales-dot/MARTINDALECHEVROLETWEBSITE/main/deploy/update-site.sh | sudo bash
-#
-#  It downloads the latest copy of the repo (main branch) and copies
-#  the site/ folder into /var/www/martindale.
-#
-#  Different branch:   ... | sudo bash -s -- claude/some-branch
-#  No SSH key, no Git Bash, nothing to install on your own computer.
+#  Keeps your database, uploaded photos, and .env exactly as they are.
+#  Different branch:  ... | sudo bash -s -- some-branch
 # =====================================================================
 set -euo pipefail
-
 BRANCH="${1:-main}"
 REPO="jbrewersales-dot/MARTINDALECHEVROLETWEBSITE"
-SITE_ROOT="/var/www/martindale"
-TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
-
-command -v unzip >/dev/null || { apt-get update -qq; apt-get install -y -qq unzip; }
-
-echo "Downloading branch '$BRANCH' from GitHub..."
+APP_DIR="/srv/martindale"
+[[ -f "$APP_DIR/.env" ]] || { echo "The app isn't installed yet. Run deploy/setup.sh first."; exit 1; }
+APP_USER="$(stat -c %U "$APP_DIR/.env")"
+TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
+echo "Downloading branch '$BRANCH'..."
 curl -fsSL "https://github.com/$REPO/archive/refs/heads/$BRANCH.zip" -o "$TMP/repo.zip"
 unzip -q "$TMP/repo.zip" -d "$TMP"
-SRC="$(find "$TMP" -maxdepth 1 -mindepth 1 -type d | head -1)/site"
-[[ -f "$SRC/index.html" ]] || { echo "Download did not contain site/index.html"; exit 1; }
-
-echo "Copying to $SITE_ROOT ..."
-# Build the new copy next to the live one, then swap folders so the site is never half-copied.
-rm -rf "$SITE_ROOT.new" "$SITE_ROOT.old"
-mkdir -p "$SITE_ROOT.new"
-cp -a "$SRC/." "$SITE_ROOT.new/"
-rm -f "$SITE_ROOT.new/README-SITE.md" "$SITE_ROOT.new/.DS_Store" "$SITE_ROOT.new/Thumbs.db"
-chown -R ubuntu:ubuntu "$SITE_ROOT.new" 2>/dev/null || true
-[[ -d "$SITE_ROOT" ]] && mv "$SITE_ROOT" "$SITE_ROOT.old"
-mv "$SITE_ROOT.new" "$SITE_ROOT"
-rm -rf "$SITE_ROOT.old"
-
-echo
-echo "Done. The live site now matches site/ on branch '$BRANCH'."
-echo "Open the site in a browser and press Ctrl+Shift+R to refresh."
+SRC="$(find "$TMP" -maxdepth 1 -mindepth 1 -type d | head -1)/app"
+[[ -f "$SRC/server.js" ]] || { echo "Download did not contain app/server.js"; exit 1; }
+# remove old code (not data/.env/node_modules), copy new code in
+(cd "$APP_DIR" && find . -mindepth 1 -maxdepth 1 ! -name data ! -name node_modules ! -name .env -exec rm -rf {} +)
+(cd "$SRC" && tar --exclude=./data --exclude=./node_modules --exclude=./.env -cf - .) | tar -xf - -C "$APP_DIR"
+chown -R "$APP_USER:$APP_USER" "$APP_DIR"
+sudo -u "$APP_USER" -H bash -c "cd '$APP_DIR' && npm ci --omit=dev --no-audit --no-fund --loglevel=error"
+systemctl restart martindale
+sleep 3
+if curl -fsS -o /dev/null http://127.0.0.1:3000/; then echo; echo "Done. The site is running the latest code from '$BRANCH'."; else echo "The app did not come back up:"; journalctl -u martindale -n 30 --no-pager; exit 1; fi

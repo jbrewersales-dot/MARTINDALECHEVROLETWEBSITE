@@ -1,0 +1,16 @@
+<%- include('_head') %>
+<div class="p-head"><div><h1>Inventory</h1><div class="sub"><%= live %> units live on the site</div></div><div class="grow"></div><a class="btn btn-outline" href="/portal/inventory/import">Import from vAuto (CSV)</a><a class="btn btn-gold" href="/portal/inventory/new">+ Add vehicle</a></div>
+<div class="p-body"><%- include('_flash') %>
+  <div class="card card-pad row between" style="margin-bottom:14px;flex-wrap:wrap"><div><% if (last) { %><span class="dot <%= last.errors.length ? 'rust' : '' %>"></span><b>Last vAuto import</b> <%= u.fmtTime(last.started_at) %> · <%= last.rows_read %> rows read · <%= last.added %> added · <%= last.updated %> updated · <%= last.removed %> marked sold<%= last.errors.length ? ' · ' + last.errors.length + ' errors' : '' %><% } else { %><span class="dot rust"></span><b>No vAuto import yet.</b> Export your inventory from vAuto as CSV and paste it in.<% } %></div><a href="/portal/inventory/feed-log" style="font-weight:600">Feed log</a></div>
+  <div class="chips" style="margin-bottom:14px"><% for (const [k, l] of [['all', 'All'], ['attention', 'Needs attention'], ['novideo', 'No walkaround'], ['under20', 'Under $20K'], ['sold', 'Sold']]) { %><a class="chip <%= filter === k ? 'on' : '' %>" href="/portal/inventory?f=<%= k %>"><%= l %></a><% } %></div>
+  <div class="tbl"><table><thead><tr><th>Stock</th><th>Vehicle</th><th>Price</th><th class="hide-m">Photos</th><th class="hide-m">Walkaround</th><th>On site</th></tr></thead><tbody>
+  <% if (!rows.length) { %><tr><td colspan="6" class="muted" style="padding:30px;text-align:center">Nothing here.</td></tr><% } %>
+  <% for (const v of rows) { %><tr class="link <%= v.status === 'sold' ? 'dim' : '' %>" onclick="location.href='/portal/inventory/<%= v.id %>'">
+    <td><b><%= v.stock %></b><div class="s"><%= v.source %></div></td>
+    <td><div class="t"><%= v.title %></div><div class="s"><%= v.mileage != null ? u.miles(v.mileage) : '' %> · <%= v.condition %><%= v.local_trade ? ' · local trade' : '' %></div></td>
+    <td><%= v.price ? u.money(v.price) : '<span class="rust">No price</span>' %><div class="s">~<%= u.money(v.payment) %>/mo</div></td>
+    <td class="hide-m"><%= v.photos.length %><% if (!v.photos.length) { %> <span class="rust">· none</span><% } %></td>
+    <td class="hide-m"><%= v.video_url ? (v.videoLabel || 'Yes') : '<span class="rust">Missing</span>' %></td>
+    <td><% if (v.status === 'live') { %><span class="pill pill-green">Live</span><% } else if (v.status === 'hidden') { %><span class="pill pill-rust">Hidden<%= !v.photos.length ? ' — no photos' : '' %></span><% } else { %><span class="pill pill-muted">Sold</span><% } %></td>
+  </tr><% } %></tbody></table></div>
+</div><%- include('_foot') %>

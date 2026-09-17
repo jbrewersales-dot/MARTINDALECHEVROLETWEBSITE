@@ -1,0 +1,54 @@
+<%- include('_head') %>
+<div class="p-head"><a href="/portal/apps" class="muted" style="font-weight:600">← Credit applications</a><div class="grow"></div>
+  <% if (app.status === 'new' && !app.first_response_at) { %><span class="pill pill-<%= app.slaLate ? 'rust' : 'gold' %>">● New — <%= app.slaLate ? 'overdue' : 'respond by ' + app.slaLabel %></span><% } else { %><span class="pill pill-<%= PILL[app.status] %>"><%= APP_STATUSES[app.status] %></span><% } %></div>
+<div class="p-body"><%- include('_flash') %>
+<div class="two">
+  <div>
+    <div class="card card-pad">
+      <div class="row between" style="align-items:flex-start;flex-wrap:wrap;gap:12px"><div><h2 style="font-size:24px"><%= app.first_name %> <%= app.last_name %></h2><div class="muted"><%= u.fmtPhone(app.phone) %><%= app.email ? ' · ' + app.email : '' %> · submitted <%= u.fmtTime(app.submitted_at) %></div></div>
+        <div class="row"><a class="btn btn-gold" href="sms:+1<%= app.phone %>">Text</a><a class="btn btn-outline" href="tel:+1<%= app.phone %>">Call</a></div></div>
+      <hr style="border:0;border-top:1px solid var(--border);margin:16px 0">
+      <div class="sec-t">Snapshot</div>
+      <div class="snap">
+        <div><div class="k">Income</div><div class="v"><%= u.money(app.monthly_income) %>/mo<%= app.other_income ? ' + ' + u.money(app.other_income) + ' other' : '' %></div></div>
+        <div><div class="k">Housing</div><div class="v"><%= app.housing_type === 'family' ? 'With family' : (app.housing_type || '—') %> · <%= u.money(app.housing_payment) %>/mo</div></div>
+        <div><div class="k">Vehicle interest</div><div class="v"><% if (app.vehicle) { %><a href="/portal/inventory/<%= app.vehicle.id %>"><%= app.vehicle.title %></a> · <%= u.money(app.vehicle.price) %><% } else { %>Not tied to a vehicle<% } %></div></div>
+        <div><div class="k">Est. payment-to-income</div><div class="v <%= app.ptiClass %>"><%= app.ptiLabel || '—' %></div></div>
+      </div>
+    </div>
+
+    <div class="card card-pad" style="margin-top:14px"><div class="sec-t">Full application</div>
+      <div class="snap">
+        <div><div class="k">Date of birth</div><div class="v"><%= dob ? dob + (age ? ' (' + age + ')' : '') : '—' %></div></div>
+        <div><div class="k">Social Security #</div><div class="v ssn" id="ssn">•••-••-<%= app.ssn_last4 || '????' %> <% if (app.ssn_enc && ['admin','finance'].includes(user.role)) { %><button class="btn btn-outline" style="min-height:28px;padding:0 10px;font-size:12px;margin-left:6px" data-reveal="<%= app.id %>">Reveal</button><% } %></div></div>
+        <div><div class="k">Address</div><div class="v"><%= app.address1 %><br><%= app.city %>, <%= app.state %> <%= app.zip %><div class="s muted"><%= app.months_at_address ? (app.months_at_address >= 12 ? Math.round(app.months_at_address / 12) + '+ yrs' : 'under a year') : '' %><%= app.prev_address ? ' · previously ' + app.prev_address : '' %></div></div></div>
+        <div><div class="k">Work</div><div class="v"><%= app.employer %><%= app.job_title ? ' · ' + app.job_title : '' %><div class="s muted"><%= app.months_at_job ? (app.months_at_job >= 12 ? Math.round(app.months_at_job / 12) + '+ yrs there' : 'under a year there') : '' %></div></div></div>
+        <div><div class="k">Consent</div><div class="v"><%= app.consent_at ? 'Yes · ' + u.fmtTime(app.consent_at) + ' · IP ' + app.consent_ip : 'No' %></div></div>
+        <div><div class="k">Driver's license</div><div class="v"><% if (app.license_front || app.license_back) { %><div class="lic"><% if (app.license_front) { %><a href="/portal/apps/<%= app.id %>/license/front" target="_blank"><img src="/portal/apps/<%= app.id %>/license/front" alt="Front"></a><% } %><% if (app.license_back) { %><a href="/portal/apps/<%= app.id %>/license/back" target="_blank"><img src="/portal/apps/<%= app.id %>/license/back" alt="Back"></a><% } %></div><% } else { %>Not added<% } %></div></div>
+      </div>
+    </div>
+
+    <div class="card card-pad" style="margin-top:14px"><div class="sec-t">Activity</div>
+      <form method="post" action="/portal/apps/<%= app.id %>/note" class="row" style="margin-bottom:12px;flex-wrap:wrap"><select class="input" name="type" style="width:110px"><option value="note">Note</option><option value="call">Called</option><option value="text">Texted</option></select><input class="input grow" name="note" placeholder="Add an internal note…"><button class="btn btn-outline" type="submit">Add</button></form>
+      <% for (const ev of activity) { %><div class="act <%= ['submitted','status_change'].includes(ev.type) ? 'sys' : '' %>"><i></i><div><b><%= ev.type === 'submitted' ? 'Application submitted' : ev.type === 'status_change' ? 'Status changed' : ev.type === 'call' ? 'Call' : ev.type === 'text' ? 'Text' : 'Note' %></b> <span class="w"><%= u.fmtTime(ev.at) %><%= ev.by_name ? ' · ' + ev.by_name : '' %></span><% if (ev.note) { %><p><%= ev.note %></p><% } %></div></div><% } %>
+    </div>
+  </div>
+
+  <div>
+    <div class="card card-pad"><div class="sec-t">Status</div>
+      <form method="post" action="/portal/apps/<%= app.id %>/status"><select class="input" name="status" onchange="this.form.submit()"><% for (const [k, l] of Object.entries(APP_STATUSES)) { %><option value="<%= k %>" <%= app.status === k ? 'selected' : '' %>><%= l %></option><% } %></select></form>
+      <p class="fine" style="margin-top:8px">Turned down? Federal law says the customer must get an adverse-action notice with the reason and the credit bureau used. Send it before you close this out.</p>
+      <div class="sec-t" style="margin-top:14px">Assigned to</div>
+      <form method="post" action="/portal/apps/<%= app.id %>/assign"><select class="input" name="assigned_to" onchange="this.form.submit()"><option value="">Nobody</option><% for (const us of users) { %><option value="<%= us.id %>" <%= app.assigned_to === us.id ? 'selected' : '' %>><%= us.name %></option><% } %></select></form>
+    </div>
+    <div class="card card-pad" style="margin-top:14px"><div class="sec-t">Quick text</div>
+      <% const first = app.first_name; const t = DEALER.financeName; %>
+      <div class="stack">
+        <a class="btn btn-outline wide" href="sms:+1<%= app.phone %>?&body=<%= encodeURIComponent(`Hi ${first}, this is ${t} at Martindale Chevrolet. Got your application — I'm running it by our lenders now and will text you a real number shortly.`) %>">"Got it, working on it"</a>
+        <a class="btn btn-outline wide" href="sms:+1<%= app.phone %>?&body=<%= encodeURIComponent(`Hi ${first}, ${t} at Martindale. Almost there — I need one thing: a recent pay stub. Snap a photo and text it back to me here. Thanks!`) %>">"Need a pay stub"</a>
+        <a class="btn btn-outline wide" href="sms:+1<%= app.phone %>?&body=<%= encodeURIComponent(`${first}, good news — you're approved. Text me back or call ${DEALER.salesPhone} and we'll go over your numbers.`) %>">"You're approved"</a>
+      </div>
+    </div>
+    <% if (user.role === 'admin') { %><form method="post" action="/portal/apps/<%= app.id %>/delete" style="margin-top:14px" onsubmit="return confirm('Delete this application and its license photos for good?')"><button class="btn btn-outline wide" style="color:var(--rust)">Delete application</button></form><% } %>
+  </div>
+</div></div><%- include('_foot') %>

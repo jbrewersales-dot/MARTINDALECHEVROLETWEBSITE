@@ -1,284 +1,185 @@
-# Martindale Chevrolet — AWS Lightsail Handoff
+# Martindale Chevrolet — Website + Staff Portal on AWS Lightsail
 
-This is the step-by-step guide to put the Martindale Chevrolet website on the internet using **AWS Lightsail** on a **Linux** server. If you're using a **Windows** server with Remote Desktop, use `HANDOFF-LIGHTSAIL-WINDOWS.md` instead. It is written so that someone who has never touched a server can follow it. Do the steps in order. Each step tells you exactly where to click.
+This is the guide to run the Martindale Chevrolet website and its staff portal on your **Ubuntu** Lightsail server. It is written for someone who has never run a server. Every step says exactly where to click and what to paste.
 
-**Total time:** about 45 minutes the first time.
-**Cost:** about **$5 per month** (the smallest Ubuntu server plus a free static IP).
+**What you get**
 
----
+- The customer website: homepage, inventory with payment-first search, vehicle pages with a payment calculator and walkaround video, trade-in request, service and contact forms.
+- A **credit application** customers fill out on their phone. It saves as they go, and the sensitive parts (SSN, date of birth, license photos) are encrypted the moment they hit the server.
+- A **staff portal** at `/portal` (password protected) where you see every application, trade-in, and lead. You can change statuses, add notes, reveal an SSN (logged), export a CSV, manage inventory, and import your vAuto CSV.
+- Email alerts to jbrewersales@gmail.com when something comes in (after the 5-minute email setup below).
 
-## What you are actually setting up (plain English)
-
-- **Lightsail** is Amazon's "simple mode" for renting a small computer on the internet (a *server*).
-- We rent one small Ubuntu Linux server. A program on it called **nginx** hands web pages to visitors.
-- The website itself is just the files in the `site/` folder of this repo (HTML, CSS, a bit of JavaScript, and `inventory/vehicles.json` which is the vehicle list).
-- To update the website you edit a file in `site/`, then run one script that copies the folder to the server. That's it.
-
-There are two other things in this repo you can ignore for now:
-
-- `design/` — the design package for the future **staff portal and buy-online flow**. That is a much bigger build (see `docs/PHASE-2-PORTAL-ON-LIGHTSAIL.md`). Nothing in it needs to be deployed today.
-- `.github/workflows/` — an optional "auto-publish when I push to GitHub" helper. Explained at the end.
+**Cost:** about $5 a month for the server. Everything else is free.
 
 ---
 
-## What you need before you start
+## The 4 lines you'll use
 
-1. An **AWS account** (aws.amazon.com → Create account; you'll need a credit card).
-2. This repo downloaded onto your computer (green **Code** button → Download ZIP, or `git clone`).
-3. A **domain name** you control, for example `martindalechevrolet.com`. If you don't have one yet, you can still do Steps 1–6 and visit the site by its IP address. Buy the domain any time (Lightsail can sell you one under **Domains & DNS**, or use GoDaddy / Namecheap / whoever).
-4. A terminal:
-   - **Mac:** the built-in **Terminal** app.
-   - **Windows:** install **Git for Windows** (gitforwindows.org) and use **Git Bash**. Everything below works in Git Bash.
+Every command below is pasted into the **Lightsail browser terminal**: Lightsail → click your instance → **Connect using SSH**. A black window opens. To paste: click the clipboard icon at the bottom-right of that tab, paste there, then right-click in the black area → Paste. Press Enter.
 
----
+| What | Paste this |
+|---|---|
+| **Install everything** (first time; safe to re-run) | `curl -fsSL https://raw.githubusercontent.com/jbrewersales-dot/MARTINDALECHEVROLETWEBSITE/main/deploy/setup.sh \| sudo bash` |
+| **Update** to the latest code on GitHub | `curl -fsSL https://raw.githubusercontent.com/jbrewersales-dot/MARTINDALECHEVROLETWEBSITE/main/deploy/update-site.sh \| sudo bash` |
+| **Show the portal login** again | `sudo cat /root/martindale-portal-login.txt` |
+| **See what the app is doing** (if something's wrong) | `sudo journalctl -u martindale -n 50 --no-pager` |
 
-## Step 1 — Create the server
-
-1. Sign in at **https://lightsail.aws.amazon.com**.
-2. Click the orange **Create instance** button.
-3. **Instance location:** leave the default region (for Missouri, **Ohio (us-east-2)** is closest, but any US region is fine). *Write down which region you picked — the SSH key file is named after it.*
-4. **Platform:** click **Linux/Unix**.
-5. **Blueprint:** click **OS Only**, then pick **Ubuntu 24.04 LTS**.
-6. Scroll down to **"Add launch script"** (it may say *"+ Add launch script"* under an *Optional* heading). Click it. A big text box appears.
-7. Open the file `deploy/lightsail-launch-script.sh` from this repo, **select all, copy, and paste the whole thing** into that box. This installs the web server for you automatically.
-8. **Choose your instance plan:** pick the cheapest one (**$5/month, 512 MB RAM** is plenty. **$3.50** also works if it is offered). The first 3 months are usually free on this plan.
-9. **Identify your instance:** name it `martindale-web`.
-10. Click **Create instance**.
-
-Wait 2–3 minutes. The instance card will turn from "Pending" to **"Running"**. Give it another 2 minutes after that so the launch script can finish installing.
+The `\|` in the table is a normal `|` character when you paste it.
 
 ---
 
-## Step 2 — Give it a permanent address (static IP)
+## Step 1 — Have a server
 
-By default the server's IP address changes every time it reboots. A static IP fixes that. It is free while attached to a running instance.
+If you already made an Ubuntu instance, skip to Step 2. Otherwise:
 
-1. In Lightsail, click the **Networking** tab at the top.
-2. Click **Create static IP**.
-3. Pick the same region as your instance.
-4. Under **Attach to an instance**, choose `martindale-web`.
-5. Name it `martindale-ip` and click **Create**.
+1. **https://lightsail.aws.amazon.com** → **Create instance**.
+2. Platform **Linux/Unix** → **OS Only** → **Ubuntu 24.04 LTS**.
+3. Plan: the **$5 / 512 MB** one is enough. ($3.50 works too.)
+4. Name it `martindale-web` → **Create instance**. Wait until it says **Running**.
+5. **Networking** tab (top of Lightsail) → **Create static IP** → attach to `martindale-web`. Write down the IP. Below it's called `YOUR-IP`.
+6. Click the instance → its own **Networking** tab → under IPv4 Firewall, **+ Add rule** → **HTTPS** → Create. (HTTP and SSH are already there.)
 
-**Write down the IP address it shows you** (something like `3.15.22.101`). You'll use it several times below. In this guide it is written as `YOUR-IP`.
+## Step 2 — Install
 
----
-
-## Step 3 — Open the door for HTTPS (firewall)
-
-1. Click your instance `martindale-web`, then the **Networking** tab *inside* the instance page.
-2. Under **IPv4 Firewall** you should see rules for **SSH (22)** and **HTTP (80)**.
-3. Click **+ Add rule**, choose **HTTPS** from the Application dropdown, and click **Create**.
-
----
-
-## Step 4 — Check the server is alive
-
-Open a web browser and go to `http://YOUR-IP` (use `http://`, not `https://`, for now).
-
-You should see a plain page that says **"Server is ready."** That means the launch script worked.
-
-If you get "can't connect", wait another couple of minutes and try again. If it still fails after 10 minutes, see **Troubleshooting** at the bottom.
-
----
-
-## Step 5 — Open the server's terminal in your browser
-
-No software needed on your computer for this.
-
-1. In Lightsail, click your instance `martindale-web`.
-2. Click the orange **Connect using SSH** button (or the little terminal icon on the instance card).
-3. A black window opens in a new browser tab. That's the server's command line. You type commands there and press Enter.
-
-To paste into that window: click the **clipboard icon** at the bottom-right of the tab, paste your text into the box, then right-click inside the black area and choose Paste (or press Ctrl+Shift+V).
-
----
-
-## Step 6 — Publish the website
-
-In the browser terminal from Step 5, paste this one line and press Enter:
+Open the browser terminal (instance → **Connect using SSH**) and paste:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jbrewersales-dot/MARTINDALECHEVROLETWEBSITE/main/deploy/update-site.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/jbrewersales-dot/MARTINDALECHEVROLETWEBSITE/main/deploy/setup.sh | sudo bash
 ```
 
-It downloads the latest copy of this repo from GitHub and copies the `site/` folder onto the server. It ends with "Done."
+It takes 2–4 minutes. If it says "Ubuntu is installing its own updates — waiting", just wait. At the end it prints a box like this:
 
-On your own computer, open `http://YOUR-IP` and press **Ctrl+Shift+R** (hard refresh). You should now see the real Martindale Chevrolet homepage, and the **Inventory** page should list vehicles.
+```
+Martindale staff portal
+URL:      http://YOUR-IP/portal
+Email:    jbrewersales@gmail.com
+Password: Xk4mPq9vRt2Lw
+```
 
-**That's the whole publishing routine.** Every time you change something in `site/` on GitHub, open the browser terminal and paste that same line again.
+**Copy that password somewhere.** You can show it again any time with `sudo cat /root/martindale-portal-login.txt`.
 
-> **If the repo is private,** that `curl` line can't download. Make the repo public (GitHub → Settings → General → Danger Zone → Change visibility), or use the "from your own computer" method below.
+## Step 3 — Look at it
 
-<details>
-<summary><strong>Alternative: publish from your own computer with deploy.sh</strong> (needs the SSH key and a terminal)</summary>
+- Website: open `http://YOUR-IP` in a browser (use `http://`, the padlock comes in Step 5).
+- Portal: `http://YOUR-IP/portal`, sign in with the email and password from Step 2.
+- First thing: **Settings → Change my password.**
 
-1. Download the SSH key: Lightsail → your **account name** (top right) → **Account** → **SSH keys** tab → **Download** the default key for your region. It's a file like `LightsailDefaultKey-us-east-2.pem`. Leave it in Downloads. Never share it or put it in the repo.
-2. Open a terminal (Mac: Terminal. Windows: install Git for Windows and use Git Bash).
-3. Run:
+Try it like a customer: on your phone, open the site, tap **Get pre-approved**, fill it out with fake info, send it. Then look at **Credit apps** in the portal. That's the whole loop.
+
+## Step 4 — Turn on email alerts (5 minutes)
+
+Without this, applications still land in the portal, you just won't get an email. To send from your Gmail:
+
+1. Go to **myaccount.google.com → Security**. Turn on **2-Step Verification** if it's off.
+2. Still under Security, open **App passwords** (search for it in the box at the top of the page if you don't see it). Create one named `Martindale site`. Google shows a 16-character password like `abcd efgh ijkl mnop`.
+3. In the browser terminal:
 
 ```bash
-cd path/to/MARTINDALECHEVROLETWEBSITE
-./deploy/deploy.sh YOUR-IP
-# or, if the key is somewhere else:
-./deploy/deploy.sh YOUR-IP /full/path/to/LightsailDefaultKey-us-east-2.pem
+curl -fsSL https://raw.githubusercontent.com/jbrewersales-dot/MARTINDALECHEVROLETWEBSITE/main/deploy/configure-email.sh -o configure-email.sh
+sudo bash configure-email.sh jbrewersales@gmail.com "abcd efgh ijkl mnop"
 ```
 
-Type `yes` if asked "Are you sure you want to continue connecting?". This copies your local `site/` folder up without going through GitHub.
-</details>
+Alerts go to the address in **Portal → Settings → Email alerts go to**. You can put several, separated by commas.
 
----
+## Step 5 — Domain name and the padlock (HTTPS)
 
-## Step 7 — Point your domain at the server
+Do this once you own a domain (e.g. `martindalechevrolet.com`).
 
-This is done wherever you bought the domain. The screens differ, but the idea is the same everywhere: create two **A records** that point to `YOUR-IP`.
+**Point the domain at the server.** Wherever you bought the domain, add two **A records**, both pointing to `YOUR-IP`:
 
-| Type | Host / Name | Value | TTL |
-|------|-------------|-------|-----|
-| A | `@` (means the bare domain) | `YOUR-IP` | 300 or "automatic" |
-| A | `www` | `YOUR-IP` | 300 or "automatic" |
+| Type | Host | Value |
+|---|---|---|
+| A | `@` | `YOUR-IP` |
+| A | `www` | `YOUR-IP` |
 
-If you'd rather manage DNS inside Lightsail: **Domains & DNS** tab → **Create DNS zone** → enter your domain → add the same two A records → then copy the four **name servers** Lightsail shows you into your registrar's "custom name servers" setting.
-
-DNS changes take anywhere from 5 minutes to a few hours. Test by opening `http://yourdomain.com` in a browser. When it shows the site, move on.
-
----
-
-## Step 8 — Turn on HTTPS (the padlock)
-
-Do this **after** Step 7 works. It is free and renews itself automatically.
-
-1. Open the browser terminal (Step 5).
-2. Paste these lines one at a time:
+Wait until `http://yourdomain.com` shows the site (5 minutes to a few hours). Then, in the browser terminal:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/jbrewersales-dot/MARTINDALECHEVROLETWEBSITE/main/deploy/enable-https.sh -o enable-https.sh
-sudo bash enable-https.sh yourdomain.com you@youremail.com
+sudo bash enable-https.sh yourdomain.com jbrewersales@gmail.com
 ```
 
-Replace `yourdomain.com` with your real domain and the email with a real address (Let's Encrypt emails you if a certificate ever fails to renew).
+Open `https://yourdomain.com`. Padlock. It renews itself forever.
 
-It takes about 30 seconds. When it says **"HTTPS is on"**, open `https://yourdomain.com`. You should see the padlock, and `http://` addresses will automatically redirect to `https://`.
-
-> If the repo is private, that `curl` line can't download the file. Instead open `deploy/enable-https.sh` on your computer, copy its contents, and in the server terminal type `nano enable-https.sh`, paste, press **Ctrl+O**, **Enter**, **Ctrl+X**. Then run the `sudo bash` line.
+> Do Step 5 before you send real customers to the credit application. Until then it's `http://`, which is fine for testing but not for real Social Security numbers.
 
 ---
 
-## You're live. Here's the day-to-day
+## Using the portal day to day
 
-### Add, remove or change a vehicle
-1. Open `site/inventory/vehicles.json` in any text editor (Notepad, TextEdit, VS Code).
-2. Copy one of the existing `{ ... }` blocks, paste it, and change the values. Keep the commas between blocks. `site/README-SITE.md` shows the exact format.
-3. Put the photo in `site/images/` and set `"image": "images/filename.jpg"`.
-4. Commit to GitHub, then run the Step 6 line in the browser terminal. Refresh the site.
+**Credit apps.** New ones are gold. Open one: you see income, housing, the vehicle they picked, and an estimated payment-to-income. The **Text** button opens your phone's texting app with their number. **Quick text** buttons have messages pre-written. Change the **Status** dropdown as you work it. The **Reveal** button next to the SSN shows it for 30 seconds and writes your name to the audit log. Only `finance` and `admin` roles can reveal.
 
-Tip: paste the whole file into https://jsonlint.com before deploying. One missing comma makes the inventory page show "Inventory is temporarily unavailable".
+**Trade-ins.** Customer sent a VIN or year/make/model, miles, condition, maybe photos. You type the low/high offer in, hit Save, and the **Text** button drafts the message with those numbers in it.
 
-### Change words on a page
-Edit the matching `.html` file in `site/` on GitHub, then run the Step 6 line. Same line every time.
+**Leads.** Contact, service and "ask about this vehicle" messages. Set to contacted or closed when you're done.
 
-### Vehicle photos
-Keep them under about 300 KB each (resize to 1200px wide). Big photos make the page slow on phones, which is most of your visitors.
+**Inventory.**
+- **+ Add vehicle** to type one in by hand. Drag photos in; they get shrunk in the browser so the site stays fast. First photo is the main photo.
+- **Import from vAuto (CSV)**: in vAuto, export inventory as CSV, open the file, paste the whole thing in, hit Preview, then Apply. Matches by VIN. Updates prices and miles, adds new units, and can mark missing ones sold. Things you set by hand (walkaround video, Bo's note, featured) are never overwritten by the import.
+- A vehicle shows on the site only when its status is **Live**. Imported units with no photo start **Hidden**.
+- Walkaround video: paste a YouTube link or a direct .mp4 link, put the length in seconds, and the vehicle card gets the "0:58 walkaround" badge.
 
----
+**Settings.** The payment estimate assumptions (APR, down payment, term) that every "$/mo est." on the site uses. Add staff users here: `staff` sees everything but can't reveal SSNs, `finance` can, `admin` can also change settings and delete things.
 
-## Before-go-live checklist
-
-Things that were **already filled in** from the dealership facts in the design package:
-- Address: 521 US Highway 61, New Madrid, MO 63869
-- Sales 573-748-2512 · Service 573-748-2241 · Text 573-620-5630
-- Hours: Mon–Fri 8–5, Sat by appointment, Sun closed
-- Email: jbrewersales@gmail.com (home page, contact page, every footer)
-
-Things **you still need to do** (search `site/` for each):
-- [ ] The **Contact** and **Service** forms don't send anywhere yet. Easiest fix with no server code: sign up at **formspree.io** (free), get your form URL, and in `contact.html` and `service.html` change `action="#"` to that URL. Then delete the "Form submission is not connected yet" line under each form.
-- [ ] Replace the sample vehicles in `site/inventory/vehicles.json` with real ones.
-- [ ] Team photos and names on `site/about.html`.
-- [ ] Optional: the dealership logo is at `site/images/logo.png` (1024×1024). The header currently uses a text wordmark. If you want the logo shown, that's a small HTML/CSS change.
-- [ ] Double-check hours and phone numbers one more time on the live site.
+**Delete the sample vehicles.** The six vehicles you see at first are samples. Open each in Inventory and hit Delete, or import your real CSV and tick "mark missing as sold".
 
 ---
 
-## Optional — auto-publish from GitHub
+## If you forget the portal password
 
-If you'd rather not run `deploy.sh` by hand, GitHub can do it every time you push a change to `site/` on the `main` branch.
+```bash
+sudo cat /root/martindale-portal-login.txt
+```
 
-1. On GitHub: repo → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**.
-2. Add `LIGHTSAIL_HOST` = `YOUR-IP`.
-3. Add `LIGHTSAIL_SSH_KEY` = open the `.pem` file in a text editor, copy **everything** (including the `-----BEGIN` and `-----END` lines), paste it as the value.
-4. That's it. The workflow in `.github/workflows/deploy-lightsail.yml` will run on the next push. You can also run it by hand from the **Actions** tab → **Deploy site to Lightsail** → **Run workflow**.
+If you changed it and forgot the new one:
 
-Until those two secrets exist the workflow just skips itself, so it's safe to leave in place.
-
----
-
-## Monthly cost
-
-| Item | Cost |
-|------|------|
-| Lightsail instance, 512 MB (Ubuntu) | $5.00 / month (first 3 months often free) |
-| Static IP | Free while attached |
-| Data transfer | 1 TB / month included — far more than a dealer site uses |
-| HTTPS certificate (Let's Encrypt) | Free |
-| Domain name | ~$12–15 / year, paid to your registrar |
-
-Set up a **billing alarm** so there are no surprises: AWS console → **Billing** → **Budgets** → create a budget for, say, $15/month with an email alert.
+```bash
+cd /srv/martindale && sudo -u ubuntu node scripts/reset-password.js jbrewersales@gmail.com "a new password here"
+```
 
 ---
 
 ## Backups
 
-Lightsail can take a full snapshot of the server automatically every day:
-instance → **Snapshots** tab → **Automatic snapshots** → **Enable**. Costs about $0.05/GB/month (roughly $1). Honestly the real backup is this Git repo — the whole website is in `site/` and can be re-published to a fresh server in 10 minutes with Steps 1–6.
+The app copies its database into `/srv/martindale/data/backups/` every day and keeps two weeks. For a full-server backup, turn on Lightsail automatic snapshots: instance → **Snapshots** tab → **Automatic snapshots** → Enable (about $1/month).
+
+**What's on the server that is not in GitHub:** the database (`/srv/martindale/data/martindale.db`), uploaded photos (`/srv/martindale/data/uploads/`), and `/srv/martindale/.env` (the secrets). The `.env` file contains the encryption key. **If you lose that key, the SSNs in the database can never be read again.** Copy `.env` somewhere safe once:
+
+```bash
+sudo cat /srv/martindale/.env
+```
+
+---
+
+## Where things are
+
+| Path | What |
+|---|---|
+| `app/` | The website + portal (Node.js, one process, SQLite database, no other services). |
+| `app/src/routes/site.js` | Customer pages. |
+| `app/src/routes/api.js` | Form handling: credit app, trade-in, leads, VIN lookup. |
+| `app/src/routes/portal.js` | The staff portal. |
+| `app/views/` | The page templates. `site/` for customers, `portal/` for staff. |
+| `app/public/css/site.css` | The look: colors and fonts from the design package. |
+| `deploy/setup.sh` | Installs everything on a fresh Ubuntu server. |
+| `deploy/update-site.sh` | Pulls the latest code and restarts. |
+| `deploy/configure-email.sh` | Gmail alerts. |
+| `deploy/enable-https.sh` | The padlock. |
+| `design/` | The original design package the site was built from. |
+| `docs/WHATS-BUILT-AND-WHATS-NEXT.md` | What's done versus what the design still calls for. |
 
 ---
 
 ## Troubleshooting
 
-**"Server is ready" page never shows up (Step 4).**
-Open the browser SSH terminal (instance → Connect) and run `sudo cat /var/log/cloud-init-output.log | tail -50`. If it complains, the launch script didn't run. Fix: in that terminal run
-`curl -fsSL https://raw.githubusercontent.com/jbrewersales-dot/MARTINDALECHEVROLETWEBSITE/main/deploy/lightsail-launch-script.sh | sudo bash`
-(or paste the file in with `nano` as described in Step 8 if the repo is private).
+**The site shows the nginx welcome page or nothing.** Run the install line again (it's safe). It repairs nginx and restarts the app.
 
-**The setup script ends with "Job for nginx.service failed" / "Address already in use".**
-Something else on the server grabbed port 80 before nginx could. Paste this in the browser terminal:
-`sudo systemctl disable --now apache2 2>/dev/null; sudo fuser -k 80/tcp; sleep 2; sudo systemctl restart nginx && echo OK`
-If it prints OK you're fine. Then continue with Step 6.
+**"502 Bad Gateway".** The app isn't running. `sudo journalctl -u martindale -n 50 --no-pager` shows why. Usually a bad `.env` edit. Then `sudo systemctl restart martindale`.
 
-**"Could not get lock /var/lib/dpkg/lock-frontend".**
-Ubuntu is installing its own security updates in the background. Harmless. Wait a minute and run the same line again.
+**Emails don't arrive.** Check spam. Then `sudo journalctl -u martindale -n 50 --no-pager` and look for `[notify] email failed`. A wrong app password is the usual cause; re-run Step 4.
 
-**deploy.sh (alternative method) says "Permission denied (publickey)".**
-Wrong key file or wrong region's key. Re-download the key for the **same region** as the instance (see the alternative in Step 6) and pass its path as the second argument.
+**"Could not get lock /var/lib/dpkg".** Ubuntu is updating itself. The install script waits for it now. If you see it anyway, wait a minute and re-run.
 
-**The Step 6 line fails with "404" or "Not Found".**
-The repo is private (GitHub can't hand out the file) or the branch name is wrong. Make the repo public, or use the deploy.sh alternative in Step 6.
+**Something else is on port 80.** The install script kicks it off. If nginx still won't start: `sudo systemctl status nginx --no-pager -l`.
 
-**Site shows but the Inventory page says "temporarily unavailable".**
-`vehicles.json` has a typo (usually a missing or extra comma). Paste it into jsonlint.com, fix, redeploy.
-
-**I changed a file but the website looks the same.**
-Hard refresh: **Ctrl+Shift+R** (Windows) / **Cmd+Shift+R** (Mac). Styles and scripts are cached for 7 days by design.
-
-**HTTPS script fails with "could not find a matching server block" or a DNS error.**
-Your domain isn't pointing at `YOUR-IP` yet (Step 7). Check at https://dnschecker.org — both `yourdomain.com` and `www.yourdomain.com` must resolve to `YOUR-IP` before Step 8 will work.
-
-**I locked myself out / broke the server.**
-It's disposable. Delete the instance, repeat Steps 1–6 (about 10 minutes), re-attach the static IP so DNS doesn't change, re-run Step 8.
-
----
-
-## Where everything is
-
-| Path | What it is |
-|------|------------|
-| `site/` | The website. This is what gets published. |
-| `site/inventory/vehicles.json` | The vehicle list. |
-| `site/README-SITE.md` | The original notes on the site's files and inventory format. |
-| `deploy/lightsail-launch-script.sh` | Paste into Lightsail when creating the server. |
-| `deploy/update-site.sh` | Run on the server (browser terminal) to publish the latest `site/` from GitHub. |
-| `deploy/deploy.sh` | Alternative: run from your own computer to publish `site/` over SSH. |
-| `deploy/enable-https.sh` | Run on the server once to turn on HTTPS. |
-| `deploy/nginx/martindale.conf` | The web server config (reference copy of what the launch script installs). |
-| `.github/workflows/deploy-lightsail.yml` | Optional auto-publish from GitHub. |
-| `design/` | Phase 2 design package (staff portal, credit app, buy-online). Not deployed. |
-| `docs/PHASE-2-PORTAL-ON-LIGHTSAIL.md` | How the phase 2 app would be hosted on Lightsail. |
+**I broke the server.** Take a snapshot first if you can. Otherwise: create a new instance, attach the same static IP, run the install line, and restore the database from a backup if you have one (`/srv/martindale/data/backups/`).

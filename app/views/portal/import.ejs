@@ -1,0 +1,23 @@
+<%- include('_head') %>
+<div class="p-head"><a href="/portal/inventory" class="muted" style="font-weight:600">← Inventory</a></div>
+<div class="p-body"><%- include('_flash') %>
+<% if (!preview || preview.error) { %>
+<div class="two"><form class="card card-pad" method="post" action="/portal/inventory/import">
+  <h2 style="font-size:20px;margin-bottom:6px">Import from vAuto</h2><p class="body">In vAuto, export your inventory as a CSV. Open it, select all, copy, and paste it here. Or open the file below and it fills itself in.</p>
+  <% if (preview && preview.error) { %><div class="flash"><%= preview.error %></div><% } %>
+  <label class="field"><span class="label">Open a CSV file</span><input class="input" type="file" id="csvfile" accept=".csv,text/csv" style="padding-top:8px"></label>
+  <input type="hidden" name="file_name" id="file_name"><label class="field"><span class="label">Or paste the CSV</span><textarea class="input" name="csv" id="csv" style="min-height:220px;font-family:ui-monospace,monospace;font-size:12px"><%= csv %></textarea></label>
+  <button class="btn btn-gold" type="submit">Preview import</button>
+</form>
+<div class="card card-pad"><div class="sec-t">How it works</div><div class="stack body" style="font-size:13.5px"><p>Vehicles are matched by <b>VIN</b> first, then stock #. Ones we already have get updated (price, miles, photos). New ones get added — hidden until they have a photo and a price.</p><p>Things you set here (walkaround video, <%= DEALER.salesName %>'s take, featured, local trade) are never overwritten by the feed.</p><p>Vehicles from a past import that are <b>missing</b> from this file can be marked sold, if you tick that box on the preview.</p><p>Columns we look for: Stock #, VIN, Year, Make, Model, Trim, Body, Mileage, Price / Internet Price, Photos (URLs), Description, Color, Drivetrain, Engine, Transmission. Naming can vary; we match the common ones.</p></div></div></div>
+<script>document.getElementById('csvfile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;document.getElementById('file_name').value=f.name;f.text().then(t=>document.getElementById('csv').value=t)});</script>
+<% } else { %>
+<form method="post" action="/portal/inventory/import"><input type="hidden" name="confirm" value="1"><textarea name="csv" class="hide"><%= csv %></textarea>
+  <div class="card card-pad" style="margin-bottom:14px"><h2 style="font-size:20px">Preview</h2><p class="body">Matched columns: <%= preview.mapped.join(', ') %>. <%= preview.plan.filter(p => p.action === 'add').length %> to add · <%= preview.plan.filter(p => p.action !== 'add').length %> to update (<%= preview.plan.filter(p => p.action === 'price').length %> price changes)<%= preview.missing.length ? ' · ' + preview.missing.length + ' in our system but not in this file' : '' %>.</p>
+  <% if (preview.missing.length) { %><label class="check"><input type="checkbox" name="mark_sold" value="1"><span>Mark those <%= preview.missing.length %> missing vehicles as sold (<%= preview.missing.slice(0, 5).map(m => m.stock).join(', ') %><%= preview.missing.length > 5 ? '…' : '' %>)</span></label><% } %>
+  <div class="row" style="margin-top:14px"><button class="btn btn-gold" type="submit">Apply import</button><a class="btn btn-outline" href="/portal/inventory/import">Cancel</a></div></div>
+  <div class="tbl"><table><thead><tr><th>Action</th><th>Stock / VIN</th><th>Vehicle</th><th>Price</th><th>Miles</th><th>Photos</th></tr></thead><tbody>
+  <% for (const { v, action, ex } of preview.plan) { %><tr><td><span class="pill pill-<%= action === 'add' ? 'green' : action === 'price' ? 'rust' : 'ink' %>"><%= action === 'add' ? 'New' : action === 'price' ? 'Price change' : 'Update' %></span></td><td><b><%= v.stock %></b><div class="s"><%= v.vin %></div></td><td><%= [v.year, v.make, v.model, v.trim].filter(Boolean).join(' ') %></td><td><%= v.price ? u.money(v.price) : '—' %><% if (action === 'price') { %><div class="s">was <%= u.money(ex.price) %></div><% } %></td><td><%= v.mileage ? Number(v.mileage).toLocaleString() : '—' %></td><td><%= v.photos.length %></td></tr><% } %>
+  </tbody></table></div></form>
+<% } %>
+</div><%- include('_foot') %>

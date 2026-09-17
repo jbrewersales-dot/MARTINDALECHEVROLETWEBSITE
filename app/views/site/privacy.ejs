@@ -1,0 +1,13 @@
+<%- include('_head') %>
+<main class="wrap" style="--max:640px">
+  <section class="hero"><h1>Privacy, in plain English.</h1></section>
+  <div class="stack body">
+    <p><b>What we collect.</b> What you type into our forms: your name, phone, email, address, and on the credit application your date of birth, Social Security number, employer, income, and photos of your license if you add them.</p>
+    <p><b>Why.</b> To get you financed and to answer you. The credit application goes to lenders we work with so they can decide whether to lend to you. That's the only reason we ask for a Social Security number.</p>
+    <p><b>How it's protected.</b> Your SSN and date of birth are encrypted the moment they reach our server. Only our finance staff can view them, every view is logged, and license photos are kept in a private area, not on the public website.</p>
+    <p><b>What we don't do.</b> We don't sell your information. We don't robo-call. We don't run your credit until you've picked a vehicle and told us to.</p>
+    <p><b>Your rights.</b> Federal law (the Fair Credit Reporting Act and the Gramm-Leach-Bliley Act) gives you the right to know how your information is used and to get a notice if credit is denied. Ask <%= DEALER.financeName %> anytime: <a href="tel:<%= DEALER.salesTel %>"><%= DEALER.salesPhone %></a> or <a href="mailto:<%= DEALER.email %>"><%= DEALER.email %></a>.</p>
+    <p class="fine">Martindale Chevrolet · <%= DEALER.address1 %>, <%= DEALER.city %>, <%= DEALER.state %> <%= DEALER.zip %></p>
+  </div>
+</main>
+<%- include('_foot') %>

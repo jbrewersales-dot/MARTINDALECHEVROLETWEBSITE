@@ -1,0 +1,19 @@
+{
+  "name": "martindale-chevrolet",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Martindale Chevrolet customer site, credit application, and staff portal",
+  "main": "server.js",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --no-warnings=ExperimentalWarning server.js",
+    "dev": "node --no-warnings=ExperimentalWarning --watch server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-session": "^2.1.0",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "nodemailer": "^6.9.16"
+  }
+}

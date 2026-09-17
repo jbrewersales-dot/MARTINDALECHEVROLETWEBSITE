@@ -1,0 +1,17 @@
+<%- include('_head') %>
+<main class="wrap">
+  <section class="hero"><h1>Come see us, or just text.</h1><p class="sub"><%= DEALER.address1 %>, <%= DEALER.city %>, <%= DEALER.state %> <%= DEALER.zip %> · <%= DEALER.hours %></p></section>
+  <div class="split">
+    <div>
+      <div class="tap-list">
+        <a class="tap" href="sms:<%= DEALER.textTel %>"><div><div class="t">Text us</div><div class="s"><%= DEALER.textPhone %> · fastest</div></div><%- include('_chev') %></a>
+        <a class="tap" href="tel:<%= DEALER.salesTel %>"><div><div class="t">Call sales</div><div class="s"><%= DEALER.salesPhone %></div></div><%- include('_chev') %></a>
+        <a class="tap" href="tel:<%= DEALER.serviceTel %>"><div><div class="t">Call service</div><div class="s"><%= DEALER.servicePhone %></div></div><%- include('_chev') %></a>
+        <a class="tap" href="https://maps.google.com/?q=<%= encodeURIComponent(DEALER.address1 + ', ' + DEALER.city + ', ' + DEALER.state + ' ' + DEALER.zip) %>" target="_blank" rel="noopener"><div><div class="t">Get directions</div><div class="s">US-61, <%= DEALER.city %></div></div><%- include('_chev') %></a>
+        <a class="tap" href="mailto:<%= DEALER.email %>"><div><div class="t">Email</div><div class="s"><%= DEALER.email %></div></div><%- include('_chev') %></a>
+      </div>
+    </div>
+    <div><%- include('_lead_form', { type: vehicle ? 'vehicle' : 'contact', vehicle }) %></div>
+  </div>
+</main>
+<%- include('_foot') %>

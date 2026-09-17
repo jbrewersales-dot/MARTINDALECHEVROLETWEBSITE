@@ -1,0 +1,6 @@
+<%- include('_head') %>
+<div class="p-head"><a href="/portal/inventory" class="muted" style="font-weight:600">← Inventory</a><h1 style="font-size:20px">Feed log</h1></div>
+<div class="p-body"><div class="tbl"><table><thead><tr><th>When</th><th>File</th><th>Rows</th><th>Added</th><th>Updated</th><th>Sold</th><th>Errors</th><th>By</th></tr></thead><tbody>
+<% if (!runs.length) { %><tr><td colspan="8" class="muted" style="padding:30px;text-align:center">No imports yet.</td></tr><% } %>
+<% for (const f of runs) { %><tr><td><%= u.fmtTime(f.started_at) %></td><td><%= f.file_name %></td><td><%= f.rows_read %></td><td><%= f.added %></td><td><%= f.updated %></td><td><%= f.removed %></td><td class="<%= f.errors.length ? 'rust' : '' %>"><%= f.errors.length %><% if (f.errors.length) { %><div class="s" style="white-space:pre-line"><%= f.errors.join('\n') %></div><% } %></td><td><%= f.by_name || '' %></td></tr><% } %>
+</tbody></table></div></div><%- include('_foot') %>

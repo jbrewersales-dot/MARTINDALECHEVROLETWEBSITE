@@ -1,0 +1,6 @@
+<%- include('_head') %>
+<div class="p-head"><div><h1>Trade-ins</h1><div class="sub">Text the customer a range, then log it here so nobody quotes twice.</div></div></div>
+<div class="p-body"><%- include('_flash') %><div class="tbl"><table><thead><tr><th>Customer</th><th>Vehicle</th><th class="hide-m">Condition</th><th>Came in</th><th>Offer</th><th>Status</th></tr></thead><tbody>
+<% if (!rows.length) { %><tr><td colspan="6" class="muted" style="padding:30px;text-align:center">No trade-in requests yet.</td></tr><% } %>
+<% for (const t of rows) { %><tr class="link <%= t.status === 'new' ? 'new' : '' %>" onclick="location.href='/portal/trade-ins/<%= t.id %>'"><td><div class="t"><%= t.first_name %> <%= t.last_name %></div><div class="s"><%= u.fmtPhone(t.phone) %></div></td><td><div class="t"><%= [t.year, t.make, t.model, t.trim].filter(Boolean).join(' ') %></div><div class="s"><%= t.mileage ? Number(t.mileage).toLocaleString() + ' mi' : '' %><%= t.vin ? ' · ' + t.vin : '' %></div></td><td class="hide-m"><%= t.condition || '—' %></td><td><%= u.timeAgo(t.created_at) %></td><td><%= t.offer_low ? u.money(t.offer_low) + ' – ' + u.money(t.offer_high) : '—' %></td><td><span class="pill pill-<%= { new: 'gold', contacted: 'blue', offered: 'green', closed: 'muted' }[t.status] %>"><%= t.status %></span></td></tr><% } %>
+</tbody></table></div></div><%- include('_foot') %>

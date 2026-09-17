@@ -1,0 +1,18 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
+<title><%= title %> · Staff portal</title><link rel="icon" type="image/png" href="/public/images/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/public/css/site.css?v=1"><link rel="stylesheet" href="/public/css/portal.css?v=1"></head>
+<body class="portal"><div class="p-shell">
+<aside class="side">
+  <div class="brand"><b>MARTINDALE</b><small>STAFF PORTAL</small></div>
+  <nav>
+    <a href="/portal/apps" class="<%= path.startsWith('/apps') ? 'on' : '' %>">Credit apps <% if (counts.apps) { %><span class="bdg"><%= counts.apps %></span><% } %></a>
+    <a href="/portal/trade-ins" class="<%= path.startsWith('/trade-ins') ? 'on' : '' %>">Trade-ins <% if (counts.trades) { %><span class="bdg"><%= counts.trades %></span><% } %></a>
+    <a href="/portal/leads" class="<%= path.startsWith('/leads') ? 'on' : '' %>">Leads &amp; follow-ups <% if (counts.leads) { %><span class="bdg"><%= counts.leads %></span><% } %></a>
+    <a href="/portal/inventory" class="<%= path.startsWith('/inventory') ? 'on' : '' %>">Inventory</a>
+    <a href="/portal/settings" class="<%= path.startsWith('/settings') ? 'on' : '' %>">Settings</a>
+    <a href="/" target="_blank" rel="noopener">View site ↗</a>
+  </nav>
+  <div class="me"><div class="avatar" style="width:34px;height:34px;font-size:14px"><%= user.name[0].toUpperCase() %></div><div><b><%= user.name %></b><span><%= user.role %></span></div><form method="post" action="/portal/logout"><button>Log out</button></form></div>
+</aside>
+<div class="p-main">

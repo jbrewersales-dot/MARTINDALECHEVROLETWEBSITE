@@ -1,0 +1,16 @@
+<form id="lead-form" class="card card-pad">
+  <input type="hidden" name="type" value="<%= type %>"><input type="hidden" name="vehicle_stock" value="<%= typeof vehicle !== 'undefined' && vehicle ? vehicle.stock : '' %>">
+  <label class="field"><span class="label">Name</span><input class="input" name="name" autocomplete="name"></label>
+  <label class="field"><span class="label">Cell phone</span><input class="input" name="phone" type="tel" inputmode="tel" autocomplete="tel"><div class="help">We text — we don't robo-call.</div></label>
+  <label class="field"><span class="label">Email <span class="muted">(optional)</span></span><input class="input" name="email" type="email" autocomplete="email"></label>
+  <% if (type === 'service') { %>
+  <label class="field"><span class="label">What does it need?</span><textarea class="input" name="message" placeholder="Oil change, brakes, check-engine light, tires…"></textarea></label>
+  <label class="field"><span class="label">When works for you?</span><input class="input" name="preferred_date" placeholder="e.g. Tuesday morning"></label>
+  <% } else { %>
+  <label class="field"><span class="label">Message</span><textarea class="input" name="message" placeholder="<%= typeof vehicle !== 'undefined' && vehicle ? 'Asking about the ' + vehicle.title + '…' : 'How can we help?' %>"></textarea></label>
+  <% } %>
+  <div class="error form-error"></div>
+  <button class="btn btn-gold" type="submit"><%= type === 'service' ? 'Request appointment' : 'Send' %></button>
+</form>
+<div class="hide" id="lead-done"><div class="done-check"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg></div><h2 class="center">Got it.</h2><p class="center body" style="margin-top:8px"><%= type === 'service' ? DEALER.serviceName : DEALER.salesName %> will text you back from <%= DEALER.textPhone %>, usually within the hour, Mon–Fri 8–5.</p></div>
+<script>window.addEventListener('DOMContentLoaded',function(){const f=document.getElementById('lead-form');MC.form(f,'/api/leads',()=>Object.fromEntries(new FormData(f)),()=>{f.classList.add('hide');document.getElementById('lead-done').classList.remove('hide');});});</script>

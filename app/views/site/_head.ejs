@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title><%= title ? title + ' | ' : '' %>Martindale Chevrolet · New Madrid, MO</title>
+<meta name="description" content="<%= typeof description !== 'undefined' && description ? description : 'Martindale Chevrolet in New Madrid, Missouri. Good used trucks, SUVs and cars, many under $20K. Easy financing for every credit situation. Buy a good vehicle from people you know.' %>">
+<link rel="icon" type="image/png" href="/public/images/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/public/css/site.css?v=1">
+<meta name="theme-color" content="<%= typeof warm !== 'undefined' && warm ? '#FAF6EE' : '#FDFBF6' %>">
+</head>
+<body class="<%= typeof warm !== 'undefined' && warm ? 'warm' : '' %>">
+<header class="hdr">
+  <div class="wrap">
+    <a class="wordmark" href="/" aria-label="Martindale Chevrolet home"><b>MARTINDALE</b><small>CHEVROLET</small></a>
+    <div class="hdr-actions">
+      <a class="call" href="tel:<%= DEALER.salesTel %>">Call</a>
+      <nav class="nav" id="nav">
+        <a href="/inventory">Shop vehicles <%- include('_chev') %></a>
+        <a href="/apply">Get pre-approved <%- include('_chev') %></a>
+        <a href="/trade-in">Value my trade <%- include('_chev') %></a>
+        <a href="/service">Service &amp; parts <%- include('_chev') %></a>
+        <a href="/about">About us <%- include('_chev') %></a>
+        <a href="/contact">Contact <%- include('_chev') %></a>
+        <a class="btn btn-gold nav-cta" href="tel:<%= DEALER.salesTel %>">Call <%= DEALER.salesPhone %></a>
+      </nav>
+      <button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    </div>
+  </div>
+</header>

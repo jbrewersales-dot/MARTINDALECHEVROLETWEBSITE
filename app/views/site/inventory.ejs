@@ -1,0 +1,35 @@
+<%- include('_head', { warm: true }) %>
+<main>
+  <div class="topbar"><div class="wrap wide row">
+    <form class="search grow" id="search-form" onsubmit="return false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" placeholder="Search by model, price or payment" value="<%= query.q || '' %>" autocomplete="off"></form>
+    <button class="fbtn" id="open-filters" aria-label="Filters"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg><span class="n hide" id="fcount">0</span></button>
+  </div></div>
+  <div class="wrap wide">
+    <div class="chips scroll" id="active-chips" style="margin-top:12px"></div>
+    <div class="row between" style="margin:14px 0 12px"><b id="count" style="font-size:13px">…</b>
+      <select id="sort" class="input" style="width:auto;height:36px;padding:0 8px;border:0;background:none;color:var(--link);font-weight:600;font-size:13px"><option value="payment">Lowest payment first ↓</option><option value="price_desc">Highest price first</option><option value="newest">Newest arrivals</option><option value="miles">Lowest miles</option></select></div>
+    <div class="results" id="results"></div>
+    <p class="center muted hide" id="empty" style="padding:40px 0">Nothing matches those filters. <a href="#" id="clear-empty">Clear them</a> or text us what you're after: <a href="sms:<%= DEALER.textTel %>"><%= DEALER.textPhone %></a>.</p>
+  </div>
+</main>
+
+<div class="sheet" id="sheet" role="dialog" aria-label="Filters">
+  <div class="s-head"><h1 style="font-size:26px">Filters</h1><a href="#" id="clear-all" style="font-weight:600">Clear all</a></div>
+  <div class="s-body">
+    <div class="seg" id="mode"><button data-mode="payment" class="on">By payment</button><button data-mode="price">By price</button></div>
+    <div id="pay-slider" style="margin-top:18px"><div class="slider-lab"><span class="label">Monthly payment</span><b id="pay-lab">Up to $300/mo</b></div><input type="range" id="maxPayment" min="100" max="900" step="25" value="900"><div class="help">Est. with <%= u.money(fin.down) %> down · <%= fin.term %> mo · your real number comes with an approval</div></div>
+    <div id="price-slider" class="hide" style="margin-top:18px"><div class="slider-lab"><span class="label">Cash price</span><b id="price-lab">Up to $20,000</b></div><input type="range" id="maxPrice" min="5000" max="80000" step="1000" value="80000"></div>
+    <div style="margin-top:24px"><div class="label" style="margin-bottom:8px">Body type</div><div class="chips" id="body-chips"></div></div>
+    <div style="margin-top:24px"><div class="slider-lab"><span class="label">Max mileage</span><b id="mi-lab">Any</b></div><input type="range" id="maxMiles" min="20000" max="200000" step="10000" value="200000"></div>
+    <div style="margin-top:20px">
+      <div class="toggle"><span>Has walkaround video</span><button class="switch" data-flag="video" aria-label="Has walkaround video"></button></div>
+      <div class="toggle"><span>Local trade-in</span><button class="switch" data-flag="local" aria-label="Local trade-in"></button></div>
+      <div class="toggle"><span>New only</span><button class="switch" data-flag="new" aria-label="New only"></button></div>
+    </div>
+  </div>
+  <div class="s-foot"><button class="btn btn-gold" id="apply-filters">Show all</button></div>
+</div>
+
+<script>window.VEHICLES = <%- JSON.stringify(vehicles.map(v => ({ stock: v.stock, year: v.year, make: v.make, model: v.model, trim: v.trim, body_type: v.body_type, condition: v.condition, price: v.price, mileage: v.mileage, payment: v.payment, photo: v.photo, title: v.title, videoLabel: v.videoLabel, local_trade: !!v.local_trade, carfax_clean: !!v.carfax_clean, created_at: v.created_at }))) %>;
+window.FIN = <%- JSON.stringify(fin) %>; window.TEXT_TEL = "<%= DEALER.textTel %>";</script>
+<%- include('_foot', { scripts: '<script src="/public/js/inventory.js?v=1"></script>' }) %>

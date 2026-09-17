@@ -1,0 +1,19 @@
+<%- include('_head') %>
+<div class="p-head"><a href="/portal/trade-ins" class="muted" style="font-weight:600">← Trade-ins</a></div>
+<div class="p-body"><%- include('_flash') %><div class="two">
+  <div class="card card-pad">
+    <h2 style="font-size:22px"><%= [t.year, t.make, t.model, t.trim].filter(Boolean).join(' ') || 'Vehicle' %></h2>
+    <div class="muted"><%= t.mileage ? Number(t.mileage).toLocaleString() + ' mi · ' : '' %><%= t.condition ? t.condition + ' condition · ' : '' %><%= t.vin ? 'VIN ' + t.vin + ' · ' : '' %>came in <%= u.fmtTime(t.created_at) %></div>
+    <div class="snap" style="margin-top:16px"><div><div class="k">Customer</div><div class="v"><%= t.first_name %> <%= t.last_name %></div></div><div><div class="k">Phone</div><div class="v"><a href="sms:+1<%= t.phone %>"><%= u.fmtPhone(t.phone) %></a></div></div></div>
+    <% if (t.notes) { %><div class="sec-t" style="margin-top:16px">Customer notes</div><p class="body" style="white-space:pre-line"><%= t.notes %></p><% } %>
+    <% if (t.photos.length) { %><div class="sec-t" style="margin-top:16px">Photos</div><div class="photos"><% t.photos.forEach((p, i) => { %><a class="ph" href="/portal/trade-ins/<%= t.id %>/photo/<%= i %>" target="_blank"><img src="/portal/trade-ins/<%= t.id %>/photo/<%= i %>" alt=""></a><% }) %></div><% } %>
+    <div class="row" style="margin-top:18px"><a class="btn btn-gold" href="sms:+1<%= t.phone %>?&body=<%= encodeURIComponent(`Hi ${t.first_name}, this is ${DEALER.salesName} at Martindale Chevrolet. Looked at your ${[t.year, t.make, t.model].filter(Boolean).join(' ')}` + (t.offer_low ? ` — I'm seeing ${u.money(t.offer_low)} to ${u.money(t.offer_high)} for it. It firms up when we look at it together, 10 minutes, no appointment.` : ' — pulling numbers now, will text you a range shortly.')) %>">Text <%= t.first_name %></a><a class="btn btn-outline" href="tel:+1<%= t.phone %>">Call</a></div>
+  </div>
+  <form class="card card-pad" method="post" action="/portal/trade-ins/<%= t.id %>">
+    <div class="sec-t">Your offer</div>
+    <div class="grid2"><label class="field"><span class="label">Low</span><input class="input" name="offer_low" inputmode="numeric" value="<%= t.offer_low || '' %>"></label><label class="field"><span class="label">High</span><input class="input" name="offer_high" inputmode="numeric" value="<%= t.offer_high || '' %>"></label></div>
+    <label class="field"><span class="label">Status</span><select class="input" name="status"><% for (const s of ['new', 'contacted', 'offered', 'closed']) { %><option value="<%= s %>" <%= t.status === s ? 'selected' : '' %>><%= s %></option><% } %></select></label>
+    <label class="field"><span class="label">Staff note</span><textarea class="input" name="staff_note"><%= t.staff_note || '' %></textarea></label>
+    <button class="btn btn-gold wide" type="submit">Save</button>
+  </form>
+</div></div><%- include('_foot') %>

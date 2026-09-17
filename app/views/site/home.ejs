@@ -1,0 +1,45 @@
+<%- include('_head') %>
+<main>
+  <section class="hero wrap">
+    <h1>Buy a good vehicle from people you know.</h1>
+    <p class="sub"><%= DEALER.city %>, <%= DEALER.state %> · Mon–Fri 8–5</p>
+    <form class="search" action="/inventory" method="get" role="search">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input name="q" placeholder='Silverado, Equinox, "under $300/mo"…' aria-label="Search inventory" autocomplete="off">
+    </form>
+    <div class="chips scroll" style="margin-top:12px">
+      <a class="chip" href="/inventory?maxPrice=20000">Under $20K</a>
+      <a class="chip" href="/inventory?maxPayment=300">Under $300/mo</a>
+      <a class="chip" href="/inventory?body=Truck">Trucks</a>
+      <a class="chip" href="/inventory?body=SUV">SUVs</a>
+    </div>
+    <a class="btn btn-gold" href="/apply" style="margin-top:20px">Get pre-approved</a>
+    <p class="meta center" style="margin-top:10px">A few minutes · we save your spot · nothing hits your credit until you pick a vehicle and say OK</p>
+  </section>
+
+  <div class="wrap">
+    <div class="photo hero home-photo"><img src="/public/images/lot.jpg" alt="Martindale Chevrolet, New Madrid, Missouri" onerror="this.remove()"><span>Photo of the lot goes here</span></div>
+  </div>
+
+  <section class="wrap" style="margin-top:8px">
+    <div class="tap-list">
+      <a class="tap" href="/inventory"><div><div class="t">Shop vehicles</div><div class="s"><%= counts.total %> in stock · <%= counts.under20 %> under $20K</div></div><%- include('_chev') %></a>
+      <a class="tap" href="/trade-in"><div><div class="t">Value my trade</div><div class="s">VIN or year, make, model · 2 minutes</div></div><%- include('_chev') %></a>
+      <a class="tap" href="/service"><div><div class="t">Schedule service</div><div class="s"><%= DEALER.servicePhone %> · Mon–Fri 8–5</div></div><%- include('_chev') %></a>
+    </div>
+  </section>
+
+  <% const featured = vehicles.filter(v => v.featured).concat(vehicles.filter(v => !v.featured)).slice(0, 3); if (featured.length) { %>
+  <section class="wrap section">
+    <div class="row between" style="margin-bottom:14px"><h2>On the lot now</h2><a href="/inventory" style="font-weight:600;font-size:14px">See all <%= counts.total %></a></div>
+    <div class="results">
+      <% for (const v of featured) { %><%- include('_vcard', { v }) %><% } %>
+    </div>
+  </section>
+  <% } %>
+
+  <section class="wrap section">
+    <div class="notice"><b>We text — we don't robo-call.</b> Questions about anything? Text <%= DEALER.financeName %> or <%= DEALER.salesName %> at <a href="sms:<%= DEALER.textTel %>"><%= DEALER.textPhone %></a>. A real person answers, Mon–Fri 8–5.</div>
+  </section>
+</main>
+<%- include('_foot') %>

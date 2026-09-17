@@ -1,0 +1,11 @@
+<a class="card vcard" href="/vehicles/<%= v.stock %>">
+  <div class="photo card-img">
+    <% if (v.photo) { %><img src="<%= v.photo %>" alt="<%= v.title %>" loading="lazy"><% } else { %><span>Photos coming soon</span><% } %>
+    <% if (v.videoLabel) { %><span class="badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><%= v.videoLabel %></span><% } %>
+  </div>
+  <div class="body">
+    <div class="price-row"><span class="pay"><%= u.money(v.payment) %><small>/mo est.</small></span><span class="cash"><%= u.money(v.price) %></span></div>
+    <h3><%= v.title %></h3>
+    <div class="meta"><%= u.miles(v.mileage) %><%= v.condition === 'New' ? ' · new' : '' %><%= v.local_trade ? ' · local trade' : '' %><%= v.carfax_clean ? ' · clean Carfax' : '' %> · Stock #<%= v.stock %></div>
+  </div>
+</a>

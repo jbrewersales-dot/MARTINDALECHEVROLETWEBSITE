@@ -1,0 +1,16 @@
+<%- include('_head') %>
+<main class="wrap">
+  <section class="hero"><h1>Service &amp; parts.</h1><p class="sub">GM-trained techs, real parts, straight answers. Mon–Fri 8–5. Call <a href="tel:<%= DEALER.serviceTel %>"><%= DEALER.servicePhone %></a> or request a time below.</p></section>
+  <div class="split">
+    <div>
+      <div class="card card-pad">
+        <div class="label" style="margin-bottom:6px">What we do</div>
+        <div class="svc">Oil changes, tires, brakes, batteries</div><div class="svc">Check-engine and diagnostics</div><div class="svc">Factory maintenance on any make</div><div class="svc">Genuine GM parts and accessories</div><div class="svc">Pre-purchase inspections on our used vehicles, on request</div>
+      </div>
+      <div class="notice" style="margin-top:14px"><b>Ask for <%= DEALER.serviceName %>.</b> He runs the shop and he'll tell you what can wait and what can't.</div>
+    </div>
+    <div><%- include('_lead_form', { type: 'service' }) %></div>
+  </div>
+</main>
+<%- include('_foot') %>
+

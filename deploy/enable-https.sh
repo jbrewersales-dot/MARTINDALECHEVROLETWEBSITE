@@ -2,9 +2,10 @@
 # =====================================================================
 #  Turn on free HTTPS (the padlock) with Let's Encrypt.
 #
-#  Run this ON THE SERVER (Lightsail browser SSH window), ONE time,
+#  Run this ON THE SERVER (Lightsail browser terminal), ONE time,
 #  AFTER your domain name points at the server's static IP:
 #
+#     curl -fsSL https://raw.githubusercontent.com/jbrewersales-dot/MARTINDALECHEVROLETWEBSITE/main/deploy/enable-https.sh -o enable-https.sh
 #     sudo bash enable-https.sh martindalechevrolet.com you@email.com
 #
 #  It sets the domain in nginx, gets a certificate for both
@@ -36,6 +37,9 @@ certbot --nginx \
   -d "$DOMAIN" -d "www.$DOMAIN" \
   --non-interactive --agree-tos --redirect \
   -m "$EMAIL"
+
+# Links in alert emails should use the real address now
+if [[ -f /srv/martindale/.env ]]; then sed -i "s|^SITE_URL=.*|SITE_URL=https://$DOMAIN|" /srv/martindale/.env; systemctl restart martindale; fi
 
 echo
 echo "HTTPS is on. Open https://$DOMAIN"

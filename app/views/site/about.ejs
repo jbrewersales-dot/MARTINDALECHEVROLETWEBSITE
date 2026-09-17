@@ -1,0 +1,12 @@
+<%- include('_head') %>
+<main class="wrap">
+  <section class="hero"><h1>A small-town dealer, on purpose.</h1><p class="sub">Martindale Chevrolet sits on US-61 in <%= DEALER.city %>, Missouri. We sell good used trucks, SUVs and cars — a lot of them under $20K — and we work with every credit situation, including our own in-house financing.</p></section>
+  <div class="split">
+    <div class="card card-pad staff" style="align-items:flex-start"><div class="avatar"><%= DEALER.salesName[0] %></div><div><b><%= DEALER.salesName %> · Sales &amp; appraisals</b><p class="body" style="margin-top:6px">Walks you around anything on the lot, in person or on video. Does every trade-in appraisal himself.</p><a href="sms:<%= DEALER.textTel %>">Text <%= DEALER.salesName %></a></div></div>
+    <div class="card card-pad staff" style="align-items:flex-start"><div class="avatar"><%= DEALER.financeName[0] %></div><div><b><%= DEALER.financeName %> · Finance</b><p class="body" style="margin-top:6px">Runs your application by lenders she knows by name, and by us. If you've been turned down elsewhere, talk to her first.</p><a href="/apply">Get pre-approved</a></div></div>
+    <div class="card card-pad staff" style="align-items:flex-start"><div class="avatar"><%= DEALER.serviceName[0] %></div><div><b><%= DEALER.serviceName %> · Service</b><p class="body" style="margin-top:6px">Runs the shop. Tells you what can wait and what can't.</p><a href="/service">Schedule service</a></div></div>
+    <div class="card card-pad"><b>How we do business</b><p class="body" style="margin-top:6px">Every number on this site is labeled an estimate until it's real. We text, we don't robo-call. And if we can't get you into something, we'll tell you what would help next time.</p></div>
+  </div>
+  <div class="photo hero home-photo" style="margin-top:26px"><img src="/public/images/lot.jpg" alt="" onerror="this.remove()"><span>Photo of the lot or the family goes here</span></div>
+</main>
+<%- include('_foot') %>

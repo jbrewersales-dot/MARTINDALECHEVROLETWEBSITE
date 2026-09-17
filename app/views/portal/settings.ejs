@@ -1,0 +1,20 @@
+<%- include('_head') %>
+<div class="p-head"><h1>Settings</h1></div>
+<div class="p-body"><%- include('_flash') %><div class="two">
+  <div>
+    <form class="card card-pad" method="post" action="/portal/settings"><div class="sec-t">Payment estimates &amp; alerts</div>
+      <div class="grid3"><label class="field"><span class="label">Assumed APR %</span><input class="input" name="apr" value="<%= s.apr %>" inputmode="decimal"></label><label class="field"><span class="label">Assumed down ($)</span><input class="input" name="down" value="<%= s.down %>" inputmode="numeric"></label><label class="field"><span class="label">Term (months)</span><select class="input" name="term"><% for (const t of [36, 48, 60, 72, 84]) { %><option <%= Number(s.term) === t ? 'selected' : '' %>><%= t %></option><% } %></select></label></div>
+      <label class="field"><span class="label">Email alerts go to</span><input class="input" name="notify_to" value="<%= s.notify_to %>" placeholder="you@example.com, other@example.com"><div class="help"><%= smtp ? 'Email sending is set up.' : 'Email sending is NOT set up yet — alerts only print in the server log. See the handoff guide, "Email alerts".' %></div></label>
+      <button class="btn btn-gold" type="submit" <%= user.role !== 'admin' ? 'disabled' : '' %>>Save</button>
+    </form>
+    <form class="card card-pad" method="post" action="/portal/settings/password" style="margin-top:14px"><div class="sec-t">Change my password</div>
+      <div class="grid2"><label class="field"><span class="label">Current</span><input class="input" type="password" name="current" autocomplete="current-password"></label><label class="field"><span class="label">New (10+ characters)</span><input class="input" type="password" name="next" autocomplete="new-password"></label></div>
+      <button class="btn btn-outline" type="submit">Change password</button>
+    </form>
+    <div class="card card-pad" style="margin-top:14px"><div class="sec-t">Staff users</div>
+      <div class="tbl" style="margin-bottom:14px"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Last login</th><th></th></tr></thead><tbody><% for (const us of users) { %><tr><td><%= us.name %></td><td><%= us.email %></td><td><%= us.role %></td><td><%= us.last_login_at ? u.timeAgo(us.last_login_at) : 'never' %></td><td><% if (user.role === 'admin' && us.id !== user.id) { %><form method="post" action="/portal/settings/users/<%= us.id %>/delete" onsubmit="return confirm('Remove <%= us.name %>?')"><button class="btn btn-outline" style="min-height:30px;font-size:12px">Remove</button></form><% } %></td></tr><% } %></tbody></table></div>
+      <% if (user.role === 'admin') { %><form method="post" action="/portal/settings/users"><div class="grid3"><label class="field"><span class="label">Name</span><input class="input" name="name"></label><label class="field"><span class="label">Email</span><input class="input" name="email" type="email"></label><label class="field"><span class="label">Role</span><select class="input" name="role"><option value="staff">Staff (no SSN access)</option><option value="finance">Finance (can reveal SSN)</option><option value="admin">Admin</option></select></label></div><label class="field"><span class="label">Temporary password (10+ characters)</span><input class="input" name="password" type="text" autocomplete="off"></label><button class="btn btn-outline" type="submit">Add user</button></form><% } %>
+    </div>
+  </div>
+  <div class="card card-pad"><div class="sec-t">Recent audit log</div><div style="font-size:12.5px"><% for (const a of audit) { %><div style="padding:6px 0;border-bottom:1px solid var(--border)"><b><%= a.name || 'system' %></b> <%= a.action.replace(/_/g, ' ') %><%= a.target ? ' · ' + a.target : '' %><div class="muted"><%= u.fmtTime(a.at) %></div></div><% } %></div></div>
+</div></div><%- include('_foot') %>

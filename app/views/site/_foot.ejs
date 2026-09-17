@@ -1,0 +1,25 @@
+<footer class="foot">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <div class="wordmark"><b>MARTINDALE</b><small>CHEVROLET</small></div>
+        <p><%= DEALER.address1 %><br><%= DEALER.city %>, <%= DEALER.state %> <%= DEALER.zip %></p>
+        <p><%= DEALER.hours %></p>
+      </div>
+      <div>
+        <p>Sales <a href="tel:<%= DEALER.salesTel %>"><%= DEALER.salesPhone %></a><br>
+        Service <a href="tel:<%= DEALER.serviceTel %>"><%= DEALER.servicePhone %></a><br>
+        Text <a href="sms:<%= DEALER.textTel %>"><%= DEALER.textPhone %></a><br>
+        <a href="mailto:<%= DEALER.email %>"><%= DEALER.email %></a></p>
+      </div>
+      <div>
+        <p><a href="/inventory">Inventory</a><br><a href="/apply">Financing</a><br><a href="/trade-in">Trade-in</a><br><a href="/service">Service</a><br><a href="/privacy">Privacy</a></p>
+      </div>
+    </div>
+    <p class="fine">Payments shown are estimates based on <span id="fin-note">an assumed rate, $2,000 down and a 72-month term</span>, before tax, title and fees. Your real number comes with an approval. &copy; <%= new Date().getFullYear() %> Martindale Chevrolet.</p>
+  </div>
+</footer>
+<script src="/public/js/site.js?v=1"></script>
+<%- typeof scripts !== 'undefined' ? scripts : '' %>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<%- include('_head', { warm: true }) %>
+<main class="wrap" style="--max:560px">
+  <section class="screen on" id="t-form">
+    <h1 class="q" style="margin-top:18px">What are you driving now?</h1>
+    <p class="q-sub"><%= DEALER.salesName %> texts you a real number, usually within the hour. No appointment, no pressure.</p>
+    <form id="trade">
+      <label class="field"><span class="label">VIN <span class="muted">(on your insurance card or the dash)</span></span><div class="row"><input class="input grow" name="vin" maxlength="17" autocapitalize="characters" autocomplete="off" placeholder="17 letters and numbers"><button type="button" class="btn btn-outline btn-sm" id="decode" style="height:52px">Look up</button></div><div class="help" id="vin-help"></div></label>
+      <div class="divider">or the year, make and model</div>
+      <div class="grid2"><label class="field"><span class="label">Year</span><input class="input" name="year" inputmode="numeric" maxlength="4"></label><label class="field"><span class="label">Make</span><input class="input" name="make" placeholder="Chevrolet"></label></div>
+      <div class="grid2"><label class="field"><span class="label">Model</span><input class="input" name="model" placeholder="Silverado 1500"></label><label class="field"><span class="label">Trim <span class="muted">(optional)</span></span><input class="input" name="trim" placeholder="LT"></label></div>
+      <label class="field"><span class="label">Mileage</span><input class="input" name="mileage" inputmode="numeric" data-money></label>
+      <div class="label" style="margin-bottom:6px">Honest condition</div>
+      <div class="seg" id="cond"><button type="button" data-val="rough">Rough</button><button type="button" data-val="decent">Decent</button><button type="button" data-val="sharp">Sharp</button></div>
+      <div class="label" style="margin:18px 0 6px">Photos <span class="muted">(optional, tightens the number)</span></div>
+      <div class="slots"><% ['Front', 'Back', 'Seats', 'Dash'].forEach(l => { %><label class="slot"><%= l %><input type="file" accept="image/*" capture="environment"></label><% }) %></div>
+      <label class="field" style="margin-top:18px"><span class="label">Anything we should know? <span class="muted">(optional)</span></span><textarea class="input" name="notes" placeholder="Still owe on it, new tires, check-engine light…"></textarea></label>
+      <div class="grid2"><label class="field"><span class="label">First name</span><input class="input" name="first_name"></label><label class="field"><span class="label">Last name</span><input class="input" name="last_name"></label></div>
+      <label class="field"><span class="label">Cell phone</span><input class="input" name="phone" type="tel" inputmode="tel"><div class="help">Bo texts your number here.</div></label>
+      <div class="error form-error"></div>
+      <button class="btn btn-gold" type="submit">Get my number</button>
+    </form>
+    <p class="flow-foot">Rather talk? Text <%= DEALER.salesName %>: <a href="sms:<%= DEALER.textTel %>"><%= DEALER.textPhone %></a></p>
+  </section>
+
+  <section class="screen" id="t-done">
+    <div class="done-check"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg></div>
+    <h1 class="q center">Got it, <span id="t-name"></span>.</h1>
+    <p class="q-sub center"><%= DEALER.salesName %> is pulling the regional auction numbers on your <span id="t-veh"></span> now and will text you a range from <b><%= DEALER.textPhone %></b>, usually within the hour, Mon–Fri 8–5.</p>
+    <div class="card card-pad">
+      <div class="label" style="margin-bottom:8px">How we get to a number</div>
+      <div class="summary"><div class="r"><span class="v">Regional auction value for your year, trim and miles</span></div><div class="r"><span class="v">Plus or minus for condition and what's in demand here (crew cab 4WD trucks, for one)</span></div><div class="r"><span class="v">It firms up when we walk around it together — 10 minutes, no appointment needed</span></div></div>
+    </div>
+    <div class="stack" style="margin-top:14px"><a class="btn btn-gold" href="/inventory">Shop what it could go toward</a><a class="btn btn-outline" href="/apply">Get pre-approved while you wait</a></div>
+    <div class="card card-pad staff" style="margin-top:18px"><div class="avatar"><%= DEALER.salesName[0] %></div><div class="grow"><b><%= DEALER.salesName %> does our appraisals</b><div class="meta">Questions? Text him at <%= DEALER.textPhone %></div></div></div>
+  </section>
+</main>
+<%- include('_foot', { scripts: '<script src="/public/js/trade.js?v=1"></script>' }) %>

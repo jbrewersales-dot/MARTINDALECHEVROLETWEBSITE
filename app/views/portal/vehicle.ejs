@@ -1,0 +1,32 @@
+<%- include('_head') %>
+<div class="p-head"><a href="/portal/inventory" class="muted" style="font-weight:600">← Inventory</a><div class="grow"></div><% if (v) { %><a class="btn btn-outline" href="/vehicles/<%= v.stock %>" target="_blank">View on site ↗</a><% } %></div>
+<div class="p-body"><%- include('_flash') %>
+<form method="post" action="/portal/inventory/<%= v ? v.id : 'new' %>" id="vform"><div class="two">
+  <div class="card card-pad">
+    <div class="sec-t"><%= v ? 'Vehicle' : 'New vehicle' %></div>
+    <div class="grid3"><label class="field"><span class="label">Stock #</span><input class="input" name="stock" value="<%= v ? v.stock : '' %>" required></label><label class="field"><span class="label">VIN</span><input class="input" name="vin" value="<%= v ? v.vin || '' : '' %>" maxlength="17"></label><label class="field"><span class="label">New or used</span><select class="input" name="condition"><option <%= v && v.condition === 'Used' ? 'selected' : '' %>>Used</option><option <%= v && v.condition === 'New' ? 'selected' : '' %>>New</option></select></label></div>
+    <div class="grid3"><label class="field"><span class="label">Year</span><input class="input" name="year" inputmode="numeric" value="<%= v ? v.year || '' : '' %>"></label><label class="field"><span class="label">Make</span><input class="input" name="make" value="<%= v ? v.make || '' : 'Chevrolet' %>"></label><label class="field"><span class="label">Model</span><input class="input" name="model" value="<%= v ? v.model || '' : '' %>"></label></div>
+    <div class="grid3"><label class="field"><span class="label">Trim</span><input class="input" name="trim" value="<%= v ? v.trim || '' : '' %>"></label><label class="field"><span class="label">Body</span><select class="input" name="body_type"><% for (const b of ['Truck', 'SUV', 'Sedan', 'Van', 'Other']) { %><option <%= v && v.body_type === b ? 'selected' : '' %>><%= b %></option><% } %></select></label><label class="field"><span class="label">Miles</span><input class="input" name="mileage" inputmode="numeric" value="<%= v ? v.mileage ?? '' : '' %>"></label></div>
+    <div class="grid3"><label class="field"><span class="label">Price ($)</span><input class="input" name="price" inputmode="numeric" value="<%= v ? v.price || '' : '' %>"></label><label class="field"><span class="label">Drivetrain</span><input class="input" name="drivetrain" value="<%= v ? v.drivetrain || '' : '' %>" placeholder="4WD"></label><label class="field"><span class="label">Engine</span><input class="input" name="engine" value="<%= v ? v.engine || '' : '' %>" placeholder="5.3L V8"></label></div>
+    <div class="grid2"><label class="field"><span class="label">Transmission</span><input class="input" name="transmission" value="<%= v ? v.transmission || '' : '' %>"></label><label class="field"><span class="label">Color</span><input class="input" name="color" value="<%= v ? v.color || '' : '' %>"></label></div>
+    <label class="field"><span class="label">Description (shown on the site)</span><textarea class="input" name="description"><%= v ? v.description || '' : '' %></textarea></label>
+    <div class="sec-t" style="margin-top:8px">Photos <span class="muted" style="text-transform:none;letter-spacing:0">(first one is the main photo · drag to reorder)</span></div>
+    <div class="photos" id="photos"><% if (v) v.photos.forEach(p => { %><div class="ph" draggable="true" data-src="<%= p %>"><img src="<%= p %>" alt=""><button type="button" data-rm>×</button></div><% }) %><label class="ph add">+ Add<input type="file" accept="image/*" multiple></label></div>
+    <textarea name="photos_keep" id="photos_keep" class="hide"></textarea><div id="new_photos"></div>
+  </div>
+  <div>
+    <div class="card card-pad"><div class="sec-t">On the site</div>
+      <label class="field"><span class="label">Status</span><select class="input" name="status"><% for (const [k, l] of [['live', 'Live'], ['hidden', 'Hidden'], ['sold', 'Sold']]) { %><option value="<%= k %>" <%= v && v.status === k ? 'selected' : '' %>><%= l %></option><% } %></select></label>
+      <label class="check" style="margin-bottom:10px"><input type="checkbox" name="featured" <%= v && v.featured ? 'checked' : '' %>><span>Featured on the homepage</span></label>
+      <label class="check" style="margin-bottom:10px"><input type="checkbox" name="local_trade" <%= v && v.local_trade ? 'checked' : '' %>><span>Local trade-in</span></label>
+      <label class="check" style="margin-bottom:10px"><input type="checkbox" name="carfax_clean" <%= v && v.carfax_clean ? 'checked' : '' %>><span>Clean Carfax</span></label>
+    </div>
+    <div class="card card-pad" style="margin-top:14px"><div class="sec-t">Walkaround video</div>
+      <label class="field"><span class="label">Video link (YouTube "share" link or direct .mp4)</span><input class="input" name="video_url" value="<%= v ? v.video_url || '' : '' %>"></label>
+      <div class="grid2"><label class="field"><span class="label">Length (seconds)</span><input class="input" name="video_duration" inputmode="numeric" value="<%= v ? v.video_duration || '' : '' %>"></label><label class="field"><span class="label">Shot by</span><input class="input" name="video_by" value="<%= v ? v.video_by || '' : DEALER.salesName %>"></label></div>
+    </div>
+    <div class="card card-pad" style="margin-top:14px"><div class="sec-t"><%= DEALER.salesName %>'s take (shown on the site)</div><textarea class="input" name="staff_note" placeholder="One-owner, serviced here since new. Tires are new."><%= v ? v.staff_note || '' : '' %></textarea></div>
+    <button class="btn btn-gold wide" style="margin-top:14px" type="submit">Save</button>
+    <% if (v) { %><button class="btn btn-outline wide" style="margin-top:10px;color:var(--rust)" type="submit" formaction="/portal/inventory/<%= v.id %>/delete" onclick="return confirm('Delete this vehicle and its photos?')">Delete vehicle</button><% } %>
+  </div>
+</div></form></div><%- include('_foot') %>

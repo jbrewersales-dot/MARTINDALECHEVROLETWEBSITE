@@ -1,0 +1,14 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Staff login · Martindale Chevrolet</title>
+<link rel="icon" type="image/png" href="/public/images/favicon.png"><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="/public/css/site.css?v=1"></head>
+<body class="warm"><main class="wrap" style="--max:400px;padding-top:60px">
+  <div class="wordmark" style="margin-bottom:26px"><b>MARTINDALE</b><small>STAFF PORTAL</small></div>
+  <h1 style="font-size:26px;margin-bottom:18px">Sign in.</h1>
+  <% if (timeout) { %><div class="notice" style="margin-bottom:14px">You were signed out after 15 minutes idle. Sign in again.</div><% } %>
+  <% if (error) { %><div class="notice" style="margin-bottom:14px;color:var(--rust)"><%= error %></div><% } %>
+  <form method="post" action="/portal/login"><input type="hidden" name="next" value="<%= next %>">
+    <label class="field"><span class="label">Email</span><input class="input" name="email" type="email" autocomplete="username" required autofocus></label>
+    <label class="field"><span class="label">Password</span><input class="input" name="password" type="password" autocomplete="current-password" required></label>
+    <button class="btn btn-gold" type="submit">Sign in</button>
+  </form>
+  <p class="fine" style="margin-top:22px">Staff only. Every view of customer information is logged.</p>
+</main></body></html>

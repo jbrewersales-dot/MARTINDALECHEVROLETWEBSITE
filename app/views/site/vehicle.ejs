@@ -1,0 +1,59 @@
+<%- include('_head', { warm: true, description: `${v.title} for ${u.money(v.price)} at Martindale Chevrolet, New Madrid MO. About ${u.money(v.payment)}/mo est. Stock #${v.stock}.` }) %>
+<main>
+  <div class="photo hero" id="hero">
+    <% if (v.video_url) { %><video id="vid" src="<%= v.video_url %>" playsinline controls preload="metadata" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none"></video><% } %>
+    <% if (v.photo) { %><img id="hero-img" src="<%= v.photo %>" alt="<%= v.title %>"><% } else { %><span>Photos coming soon</span><% } %>
+    <a class="circ tl" href="/inventory" aria-label="Back"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></a>
+    <% if (v.video_url) { %><button class="play" id="play" aria-label="Play walkaround"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button><span class="badge br"><%= v.videoLabel || 'Walkaround' %><%= v.video_by ? ' · ' + v.video_by + "'s walkaround" : '' %></span><% } %>
+  </div>
+  <% if (v.photos.length > 1 || v.video_url) { %>
+  <div class="thumbs">
+    <% if (v.video_url) { %><div class="thumb on" data-video="1"><div class="photo" style="width:100%;height:100%"><% if (v.photo) { %><img src="<%= v.photo %>" alt=""><% } %></div><svg style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div><% } %>
+    <% v.photos.slice(0, 8).forEach((p, i) => { %><div class="thumb <%= !v.video_url && i === 0 ? 'on' : '' %>" data-src="<%= p %>"><img src="<%= p %>" alt=""></div><% }) %>
+    <% if (v.photos.length > 8) { %><div class="thumb more">+<%= v.photos.length - 8 %></div><% } %>
+  </div>
+  <% } %>
+
+  <div class="wrap">
+    <div class="title-row"><h1><%= v.title %></h1><span class="price"><%= u.money(v.price) %></span></div>
+    <p class="meta" style="margin-top:6px"><%= [v.body_type, v.mileage != null ? u.miles(v.mileage) : null, v.drivetrain, v.engine, v.condition === 'New' ? 'New' : null, 'Stock #' + v.stock].filter(Boolean).join(' · ') %></p>
+
+    <div class="card card-pad paycard" style="margin-top:16px">
+      <div class="row between">
+        <div><div class="big" id="pay"><%= u.money(v.payment) %><small>/mo est.</small></div><div class="meta" id="pay-cap"><%= u.money(fin.down) %> down · <%= fin.term %> mo · adjust ↓</div></div>
+        <button class="btn btn-outline btn-sm" id="calc-btn">Payment calc</button>
+      </div>
+      <div class="calc" id="calc">
+        <div class="grid2">
+          <label class="field"><span class="label">Money down</span><input class="input" id="c-down" inputmode="numeric" data-money value="<%= fin.down.toLocaleString('en-US') %>"></label>
+          <label class="field"><span class="label">Trade-in value</span><input class="input" id="c-trade" inputmode="numeric" data-money placeholder="0"></label>
+        </div>
+        <div class="label" style="margin-bottom:6px">Term</div>
+        <div class="seg" id="c-term"><% [48, 60, 72, 84].forEach(t => { %><button data-term="<%= t %>" class="<%= t === fin.term ? 'on' : '' %>"><%= t %> mo</button><% }) %></div>
+        <div class="out" id="c-out"><%= u.money(v.payment) %><small style="font:500 13px var(--sans);color:var(--muted)">/mo est.</small></div>
+        <div class="fine">Assumes <%= fin.apr %>% APR. Tax, title and fees not included. An approval gives you the real number.</div>
+      </div>
+    </div>
+
+    <div class="stack" style="margin-top:14px">
+      <a class="btn btn-gold" href="/apply?stock=<%= v.stock %>">Get pre-approved for this <%= (v.body_type || 'vehicle').toLowerCase() %></a>
+      <div class="btn-row"><a class="btn btn-outline" href="/trade-in?stock=<%= v.stock %>">Value my trade</a><a class="btn btn-outline" href="sms:<%= DEALER.textTel %>?&body=<%= encodeURIComponent('Hi, I\'m looking at the ' + v.title + ' (stock #' + v.stock + ').') %>">Text about it</a></div>
+    </div>
+
+    <% if (v.staff_note) { %>
+    <div class="notice" style="margin-top:18px"><div class="staff"><div class="avatar"><%= DEALER.salesName[0] %></div><div><b><%= DEALER.salesName %>'s take:</b> <%= v.staff_note %><br><span class="meta">Ask him anything: <a href="sms:<%= DEALER.textTel %>"><%= DEALER.textPhone %></a></span></div></div></div>
+    <% } else { %>
+    <div class="notice" style="margin-top:18px"><div class="staff"><div class="avatar"><%= DEALER.salesName[0] %></div><div><b><%= DEALER.salesName %> can walk you around it</b> in person or on video. Text him: <a href="sms:<%= DEALER.textTel %>"><%= DEALER.textPhone %></a></div></div></div>
+    <% } %>
+
+    <% if (v.description) { %><section class="section"><h2 style="margin-bottom:10px">About this one</h2><p class="body" style="white-space:pre-line"><%= v.description %></p></section><% } %>
+    <section class="section" style="padding-top:8px">
+      <h2 style="margin-bottom:10px">Details</h2>
+      <div class="card card-pad summary">
+        <% [['Year', v.year], ['Make', v.make], ['Model', v.model], ['Trim', v.trim], ['Body', v.body_type], ['Miles', v.mileage != null ? Number(v.mileage).toLocaleString('en-US') : ''], ['Drive', v.drivetrain], ['Engine', v.engine], ['Trans.', v.transmission], ['Color', v.color], ['VIN', v.vin], ['Stock #', v.stock]].filter(x => x[1]).forEach(([k, val]) => { %><div class="r"><span class="k"><%= k %></span><span class="v"><%= val %></span></div><% }) %>
+      </div>
+    </section>
+  </div>
+</main>
+<script>window.VDP = { price: <%= Number(v.price || 0) %>, fin: <%- JSON.stringify(fin) %> };</script>
+<%- include('_foot', { scripts: '<script src="/public/js/vehicle.js?v=1"></script>' }) %>
