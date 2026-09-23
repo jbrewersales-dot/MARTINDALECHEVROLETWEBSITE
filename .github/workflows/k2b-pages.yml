@@ -1,4 +1,4 @@
-# Publishes the k2bnetworksolutions/ folder to GitHub Pages
+# Publishes the K2B site files at the repo root to GitHub Pages
 # whenever it changes on main.
 name: Deploy K2B site to GitHub Pages
 
@@ -6,7 +6,11 @@ on:
   push:
     branches: [main]
     paths:
-      - "k2bnetworksolutions/**"
+      - "index.html"
+      - "styles.css"
+      - "script.js"
+      - "favicon.svg"
+      - "CNAME"
       - ".github/workflows/k2b-pages.yml"
   workflow_dispatch:
 
@@ -28,8 +32,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - run: mkdir _site && cp index.html styles.css script.js favicon.svg CNAME .nojekyll _site/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: k2bnetworksolutions
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
