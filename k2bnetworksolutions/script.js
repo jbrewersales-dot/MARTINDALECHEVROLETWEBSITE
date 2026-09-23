@@ -1,7 +1,7 @@
 // K2B Network Solutions site scripts
 
 // Where demo requests get sent. Change this to your real inbox.
-const CONTACT_EMAIL = "info@k2bnetworksolutions.com";
+const CONTACT_EMAIL = "jbrewersales@gmail.com";
 
 // Mobile menu
 const toggle = document.querySelector(".nav-toggle");

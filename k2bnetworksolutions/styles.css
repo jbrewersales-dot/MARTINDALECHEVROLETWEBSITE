@@ -194,3 +194,13 @@ p { color: var(--muted); }
   .demo-form { padding: 22px; }
   .hero-actions .btn { width: 100%; text-align: center; }
 }
+
+/* Command Center modules + contact */
+.modules-head { margin-top: 70px; margin-bottom: 30px; }
+.module { border-top: 4px solid var(--blue); }
+.module .bullets { margin-top: 14px; }
+.module .bullets li { color: var(--muted); }
+.contact-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 24px; margin-top: 18px; font-weight: 600; color: var(--navy); }
+.contact-row a, .contact-row span { color: var(--navy); }
+.contact-row a:hover { color: var(--blue); }
+.site-footer address { font-style: normal; color: #c3cfe2; font-size: .95rem; }
