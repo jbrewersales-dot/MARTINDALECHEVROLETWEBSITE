@@ -57,3 +57,54 @@ form.addEventListener("submit", (e) => {
   note.textContent = "Thanks! Your email app should open with your request ready to send.";
   note.className = "form-note ok";
 });
+
+// Video intro: plays full screen once per visit, with Skip and Sound buttons.
+const intro = document.getElementById("intro");
+const introVideo = document.getElementById("intro-video");
+const soundBtn = document.getElementById("intro-sound");
+
+function closeIntro() {
+  intro.classList.add("fade");
+  introVideo.pause();
+  setTimeout(() => {
+    intro.hidden = true;
+    intro.classList.remove("fade");
+    document.body.classList.remove("intro-open");
+  }, 600);
+}
+
+function openIntro(withSound) {
+  intro.hidden = false;
+  document.body.classList.add("intro-open");
+  introVideo.currentTime = 0;
+  introVideo.muted = !withSound;
+  soundBtn.hidden = withSound;
+  introVideo.play().catch(() => {
+    // Browser blocked playback with sound; fall back to muted.
+    introVideo.muted = true;
+    soundBtn.hidden = false;
+    introVideo.play().catch(closeIntro);
+  });
+}
+
+introVideo.addEventListener("ended", closeIntro);
+// If none of the video files can play, just close the intro.
+introVideo.querySelector("source:last-of-type").addEventListener("error", closeIntro);
+document.getElementById("intro-skip").addEventListener("click", closeIntro);
+soundBtn.addEventListener("click", () => {
+  introVideo.muted = false;
+  soundBtn.hidden = true;
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !intro.hidden) closeIntro();
+});
+document.getElementById("watch-intro").addEventListener("click", () => openIntro(true));
+
+// Auto-play once per visit (skipped for visitors who prefer reduced motion).
+let seen = false;
+try { seen = sessionStorage.getItem("k2bIntroSeen") === "1"; } catch (e) {}
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (!seen && !reduceMotion) {
+  try { sessionStorage.setItem("k2bIntroSeen", "1"); } catch (e) {}
+  openIntro(false);
+}

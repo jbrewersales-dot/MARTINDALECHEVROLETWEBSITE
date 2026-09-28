@@ -18,6 +18,18 @@
 </head>
 <body>
 
+  <!-- ===== VIDEO INTRO ===== -->
+  <div id="intro" class="intro" hidden>
+    <video id="intro-video" poster="intro-poster.jpg" muted playsinline preload="auto">
+      <source src="intro.mp4" type="video/mp4">
+      <source src="intro.webm" type="video/webm">
+    </video>
+    <div class="intro-controls">
+      <button type="button" id="intro-sound" class="intro-btn">&#128264; Sound on</button>
+      <button type="button" id="intro-skip" class="intro-btn">Skip intro &#10140;</button>
+    </div>
+  </div>
+
   <!-- ===== HEADER ===== -->
   <header class="site-header">
     <div class="container nav-wrap">
@@ -55,6 +67,7 @@
           <div class="hero-actions">
             <a href="#demo" class="btn">Request a Free Demo</a>
             <a href="#dms" class="btn btn-ghost">See the DMS</a>
+            <button type="button" id="watch-intro" class="btn btn-ghost">&#9654; Watch Intro</button>
           </div>
           <ul class="trust-row">
             <li><span class="check">&#10003;</span> Cloud based</li>
