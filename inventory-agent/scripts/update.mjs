@@ -102,6 +102,9 @@ export function makeApi({ apiKey, base = DEFAULT_BASE, fetchImpl = fetch, minGap
     if (!res.ok) {
       // The results file is public, so never let the key leak into it.
       const body = (await res.text()).split(apiKey).join("***").slice(0, 300);
+      if (/quota/i.test(body)) {
+        throw new QuotaError(`MarketCheck says this plan's lookups are used up (${body}). It will try again on the next daily run.`);
+      }
       throw new Error(`MarketCheck said ${res.status} for ${endpoint}: ${body}`);
     }
     return res.json();
@@ -263,7 +266,13 @@ export async function run({
   let configChanged = false;
   const stores = [];
   const scans = new Map();
+  let quotaHit = "";
   for (const store of config.stores) {
+    if (quotaHit) {
+      const old = (previous.stores || []).find((s) => s.name === store.name);
+      stores.push({ out: { name: store.name, city: store.city, state: store.state, dealerId: store.dealerId || "", cars: old?.cars || [], error: quotaHit }, store });
+      continue;
+    }
     const out = { name: store.name, city: store.city, state: store.state, dealerId: "", cars: [], error: "" };
     try {
       const listings = await scanArea(api, store, scans, log);
@@ -282,6 +291,7 @@ export async function run({
       const name = listings.find((l) => String(l.dealer?.id) === id)?.dealer;
       log(`${store.name}: ${out.cars.length} cars (${dealerLabel(name)})`);
     } catch (err) {
+      if (err instanceof QuotaError) quotaHit = err.message;
       // Keep showing yesterday's cars rather than an empty store.
       const old = (previous.stores || []).find((s) => s.name === store.name);
       out.cars = old?.cars || [];
@@ -317,8 +327,8 @@ export async function run({
   queue.sort((a, b) => (a.car.checkedAt || "").localeCompare(b.car.checkedAt || ""));
   const todo = queue.slice(0, settings.maxCarsCheckedPerRun);
   let checked = 0;
-  let warning = "";
-  for (const { car, store } of todo) {
+  let warning = quotaHit;
+  for (const { car, store } of quotaHit ? [] : todo) {
     if (api.calls >= settings.maxApiCallsPerRun) {
       log(`Stopping at ${api.calls} API calls (maxApiCallsPerRun). The rest wait for the next run.`);
       break;

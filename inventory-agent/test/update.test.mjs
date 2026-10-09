@@ -126,7 +126,7 @@ test("a store that fails keeps yesterday's cars and never leaks the key", async 
   const { storesPath, resultsPath } = await setup();
   await run({ api: makeApi({ apiKey: "SECRET", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch([]) }), storesPath, resultsPath, log: () => {} });
 
-  const broken = async () => ({ ok: false, status: 429, text: async () => "quota used up for key SECRET" });
+  const broken = async () => ({ ok: false, status: 429, text: async () => "server busy for key SECRET" });
   const results = await run({ api: makeApi({ apiKey: "SECRET", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: broken }), storesPath, resultsPath, log: () => {} });
   assert.equal(results.stores[0].cars.length, 2);
   assert.match(results.stores[0].error, /429/);
@@ -252,4 +252,18 @@ test("gives up and saves when the plan's lookups are used up", async () => {
   const results = await run({ api, storesPath, resultsPath, log: () => {} });
   assert.equal(calls, 3);
   assert.match(results.warning, /rate limit/);
+});
+
+test("a used-up monthly quota stops the run on the first answer", async () => {
+  const { storesPath, resultsPath } = await setup();
+  let calls = 0;
+  const empty = async () => {
+    calls++;
+    return { ok: false, status: 429, text: async () => '{"message": "Monthly API quota exhausted"}' };
+  };
+  const api = makeApi({ apiKey: "K", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [1, 1], fetchImpl: empty });
+  const results = await run({ api, storesPath, resultsPath, log: () => {} });
+  assert.equal(calls, 3, "one call plus its two retries, then stop");
+  assert.match(results.warning, /used up/);
+  assert.match(results.stores[1].error, /used up/);
 });
