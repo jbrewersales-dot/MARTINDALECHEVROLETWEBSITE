@@ -1,9 +1,10 @@
 {
- "updatedAt": "2026-10-09T20:02:11.543Z",
- "radiusMiles": 550,
+ "updatedAt": "2026-10-09T20:55:07.588Z",
+ "radiusMiles": 100,
  "checkedThisRun": 0,
  "waitingToBeChecked": 0,
- "apiCalls": 12,
+ "apiCalls": 10,
+ "warning": "",
  "stores": [
   {
    "name": "Morlan Chevrolet",
@@ -11,39 +12,31 @@
    "state": "MO",
    "dealerId": "1018275",
    "cars": [],
-   "error": ""
+   "error": "MarketCheck said 429 for /search/car/active: {\"message\": \"Monthly API quota exhausted\"}"
   },
   {
    "name": "Morlan Nissan",
    "city": "Dexter",
    "state": "MO",
-   "dealerId": "",
+   "dealerId": "1075492",
    "cars": [],
-   "error": "MarketCheck said 429 for /search/car/active: {\"message\": \"API rate limit exceeded\"}"
+   "error": "MarketCheck said 429 for /search/car/active: {\"message\": \"Monthly API quota exhausted\"}"
   },
   {
    "name": "Morlan Ford Lincoln",
    "city": "Sikeston",
    "state": "MO",
-   "dealerId": "",
+   "dealerId": "1013739",
    "cars": [],
-   "error": "MarketCheck said 429 for /search/car/active: {\"message\": \"API rate limit exceeded\"}"
+   "error": "MarketCheck said 429 for /search/car/active: {\"message\": \"Monthly API quota exhausted\"}"
   },
   {
    "name": "Morlan Dodge",
    "city": "Sikeston",
    "state": "MO",
-   "dealerId": "",
+   "dealerId": "1013722",
    "cars": [],
-   "error": "MarketCheck said 429 for /search/car/active: {\"message\": \"API rate limit exceeded\"}"
-  },
-  {
-   "name": "John Morlan Chrysler Dodge Jeep Ram",
-   "city": "Cape Girardeau",
-   "state": "MO",
-   "dealerId": "",
-   "cars": [],
-   "error": "MarketCheck said 429 for /search/car/active: {\"message\": \"API rate limit exceeded\"}"
+   "error": "MarketCheck said 429 for /search/car/active: {\"message\": \"Monthly API quota exhausted\"}"
   }
  ]
 }

@@ -168,6 +168,7 @@ function renderStats() {
     stat(withMatch.length.toLocaleString("en-US"), "Have a cheaper twin nearby"),
     stat(money(total), "Total gap to the cheapest twins")
   );
+  if (data.warning) $("stats").append(el("p", { class: "warn" }, data.warning));
   for (const s of data.stores) {
     if (s.error) {
       $("stats").append(el("p", { class: "warn" }, `${s.name}: couldn't refresh on the last run, so these may be older numbers. (${s.error})`));

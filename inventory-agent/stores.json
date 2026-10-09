@@ -1,9 +1,10 @@
 {
-  "_help": "The Morlan stores the agent checks. To add or fix a store, copy one block and change it. 'website' is the store's own site with no https:// or www (leave it empty if you don't know it). 'nameWords' are words that are always in the store's name, used to tell stores in the same town apart. 'dealerId' is filled in by the agent after its first run - leave it empty.",
-  "searchRadiusMiles": 550,
+  "_help": "The Morlan stores the agent checks. To add or fix a store, copy one block and change it. 'nameWords' are words that are always in the store's name, used to tell stores in the same town apart. 'dealerId' is filled in by the agent after its first run - leave it empty. searchRadiusMiles is how far to look for cheaper cars; your MarketCheck plan allows up to 100 - raise it if you upgrade.",
+  "searchRadiusMiles": 100,
   "usedMilesWindow": 15000,
   "maxCarsCheckedPerRun": 400,
   "recheckAfterDays": 3,
+  "maxApiCallsPerRun": 1000,
   "stores": [
     {
       "name": "Morlan Chevrolet",
@@ -31,7 +32,7 @@
       "zip": "63841",
       "latitude": 36.7959,
       "longitude": -89.9579,
-      "dealerId": ""
+      "dealerId": "1075492"
     },
     {
       "name": "Morlan Ford Lincoln",
@@ -45,7 +46,7 @@
       "zip": "63801",
       "latitude": 36.8762,
       "longitude": -89.5878,
-      "dealerId": ""
+      "dealerId": "1013739"
     },
     {
       "name": "Morlan Dodge",
@@ -59,21 +60,7 @@
       "zip": "63801",
       "latitude": 36.8762,
       "longitude": -89.5878,
-      "dealerId": ""
-    },
-    {
-      "name": "John Morlan Chrysler Dodge Jeep Ram",
-      "website": "",
-      "nameWords": [
-        "Morlan",
-        "Jeep"
-      ],
-      "city": "Cape Girardeau",
-      "state": "MO",
-      "zip": "63701",
-      "latitude": 37.3059,
-      "longitude": -89.5181,
-      "dealerId": ""
+      "dealerId": "1013722"
     }
   ]
 }

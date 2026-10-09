@@ -43,15 +43,11 @@ function fakeFetch(seen) {
     const p = Object.fromEntries(u.searchParams);
     seen.push(p);
     let listings = [];
-    if (p.source === "morlanchevrolet.com") listings = [ourTruck];
-    else if (p.source) listings = [];
+    if (p.dealer_id || p.source) listings = []; // like the real plan: a count but no cars
     else if (p.radius === "10") {
-      // Looking around a store's address for its dealer id.
-      listings = [ourTruck, ourFord];
-    } else if (p.dealer_id === "111") listings = [ourTruck, ourNew];
-    else if (p.dealer_id === "222") listings = [ourFord];
-    else if (p.dealer_id) listings = [];
-    else if (p.model === "Silverado 1500") listings = comps;
+      // Everything for sale around a store, including other dealers.
+      listings = [ourTruck, ourNew, ourFord, listing({ vin: "LOCAL1", price: 9000, dealerId: 500, dealerName: "Corner Lot", city: "Dexter" })];
+    } else if (p.model === "Silverado 1500") listings = comps;
     else listings = [];
     return { ok: true, json: async () => ({ num_found: listings.length, listings }) };
   };
@@ -80,13 +76,14 @@ async function setup() {
 test("finds the cheaper identical car and skips non-matches and sister stores", async () => {
   const { storesPath, resultsPath } = await setup();
   const seen = [];
-  const api = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", fetchImpl: fakeFetch(seen) });
+  const api = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch(seen) });
   const results = await run({ api, storesPath, resultsPath, log: () => {} });
 
   const chevy = results.stores.find((s) => s.name === "Morlan Chevrolet");
   const ford = results.stores.find((s) => s.name === "Morlan Ford Lincoln");
   assert.equal(chevy.dealerId, "111");
-  assert.equal(ford.dealerId, "222", "found by looking near the address when the website lookup misses");
+  assert.equal(ford.dealerId, "222");
+  assert.deepEqual(ford.cars.map((c) => c.vin), ["OURFORD"], "only the store's own cars, not other lots nearby");
   assert.equal(chevy.cars.length, 2);
 
   const truck = chevy.cars.find((c) => c.vin === "OURTRUCK");
@@ -96,8 +93,10 @@ test("finds the cheaper identical car and skips non-matches and sister stores", 
   // The comparison search used the 550 mile radius and the mileage window.
   const compSearch = seen.find((p) => p.model === "Silverado 1500");
   assert.equal(compSearch.radius, "550");
+  assert.equal(seen.filter((p) => p.radius === "10").length, 2, "one area scan per town");
   assert.equal(compSearch.miles_range, "15000-45000");
   assert.equal(compSearch.price_range, "1-39999");
+  assert.equal(compSearch.sort_by, "price");
 
   // New cars search new cars and don't use a mileage window.
   const tahoeSearch = seen.find((p) => p.model === "Tahoe");
@@ -111,24 +110,24 @@ test("finds the cheaper identical car and skips non-matches and sister stores", 
 
 test("a second run the same day reuses answers instead of spending API calls", async () => {
   const { storesPath, resultsPath } = await setup();
-  const first = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", fetchImpl: fakeFetch([]) });
+  const first = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch([]) });
   await run({ api: first, storesPath, resultsPath, log: () => {} });
 
   const seen = [];
-  const second = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", fetchImpl: fakeFetch(seen) });
+  const second = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch(seen) });
   const results = await run({ api: second, storesPath, resultsPath, log: () => {} });
   assert.equal(results.checkedThisRun, 0);
-  assert.equal(seen.filter((p) => p.price_range).length, 0);
+  assert.equal(seen.filter((p) => p.sort_by).length, 0);
   const truck = results.stores[0].cars.find((c) => c.vin === "OURTRUCK");
   assert.equal(truck.matches.length, 2);
 });
 
 test("a store that fails keeps yesterday's cars and never leaks the key", async () => {
   const { storesPath, resultsPath } = await setup();
-  await run({ api: makeApi({ apiKey: "SECRET", base: "https://fake.test/v2", fetchImpl: fakeFetch([]) }), storesPath, resultsPath, log: () => {} });
+  await run({ api: makeApi({ apiKey: "SECRET", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch([]) }), storesPath, resultsPath, log: () => {} });
 
-  const broken = async () => ({ ok: false, status: 429, text: async () => "quota used up for key SECRET" });
-  const results = await run({ api: makeApi({ apiKey: "SECRET", base: "https://fake.test/v2", fetchImpl: broken }), storesPath, resultsPath, log: () => {} });
+  const broken = async () => ({ ok: false, status: 429, text: async () => "server busy for key SECRET" });
+  const results = await run({ api: makeApi({ apiKey: "SECRET", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: broken }), storesPath, resultsPath, log: () => {} });
   assert.equal(results.stores[0].cars.length, 2);
   assert.match(results.stores[0].error, /429/);
   assert.doesNotMatch(await readFile(resultsPath, "utf8"), /SECRET/);
@@ -141,4 +140,130 @@ test("same-car rules", () => {
   assert.ok(!isSameCar(base, { ...base, trim: "Lariat" }));
   assert.ok(!isSameCar(base, { ...base, year: 2020 }));
   assert.ok(!isSameCar(base, { ...base, drivetrain: "RWD" }));
+});
+
+test("waits and tries again when MarketCheck says slow down", async () => {
+  let tries = 0;
+  const flaky = async () => {
+    tries++;
+    if (tries < 3) return { ok: false, status: 429, text: async () => "API rate limit exceeded" };
+    return { ok: true, status: 200, json: async () => ({ num_found: 0, listings: [] }) };
+  };
+  const api = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [1, 1, 1], fetchImpl: flaky });
+  const r = await api.search({ make: "Ford" });
+  assert.equal(tries, 3);
+  assert.equal(r.num_found, 0);
+
+  tries = -10;
+  const giveUp = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [1, 1], fetchImpl: flaky });
+  await assert.rejects(giveUp.search({ make: "Ford" }), /429/);
+});
+
+test("spaces out calls", async () => {
+  const times = [];
+  const ok = async () => {
+    times.push(Date.now());
+    return { ok: true, status: 200, json: async () => ({ listings: [] }) };
+  };
+  const api = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 50, retryWaitsMs: [], fetchImpl: ok });
+  await api.search({});
+  await api.search({});
+  await api.search({});
+  assert.ok(times[2] - times[0] >= 95, `calls were ${times[2] - times[0]}ms apart`);
+});
+
+test("stops checking and says so when the plan's radius is too small", async () => {
+  const { storesPath, resultsPath } = await setup();
+  let priceChecks = 0;
+  const limited = async (url) => {
+    const p = Object.fromEntries(new URL(url).searchParams);
+    if (p.sort_by) {
+      priceChecks++;
+      return { ok: false, status: 422, text: async () => '{"code":422,"message":"Subscribed package radius limit of 100 miles exceeded"}' };
+    }
+    return fakeFetch([])(url);
+  };
+  const api = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: limited });
+  const results = await run({ api, storesPath, resultsPath, log: () => {} });
+  assert.equal(priceChecks, 1);
+  assert.match(results.warning, /100 miles/);
+  assert.equal(results.stores[0].cars.length, 2, "cars still listed");
+});
+
+test("a busy area is split into price bands to get past the 500 row paging limit", async () => {
+  const { storesPath, resultsPath } = await setup();
+  // 1,200 cars around Dexter, 300 of them Morlan Chevrolet's.
+  const area = [];
+  for (let i = 0; i < 1200; i++) {
+    const mine = i % 4 === 0;
+    area.push(listing({ vin: `V${i}`, price: 5000 + i * 37, dealerId: mine ? 111 : 600 + (i % 7), dealerName: mine ? "Autry Morlan Chevrolet" : "Other Lot", city: "Dexter" }));
+  }
+  const strict = async (url) => {
+    const p = Object.fromEntries(new URL(url).searchParams);
+    if (p.radius === "10") {
+      const start = Number(p.start || 0);
+      const rows = Number(p.rows || 10);
+      if (start + rows > 500) return { ok: false, status: 422, text: async () => "Subscribed package pagination limit of 500 rows exceeded" };
+      const [lo, hi] = (p.price_range || "0-99999999").split("-").map(Number);
+      const hits = area.filter((l) => l.price >= lo && l.price <= hi);
+      return { ok: true, json: async () => ({ num_found: hits.length, listings: hits.slice(start, start + rows) }) };
+    }
+    return { ok: true, json: async () => ({ num_found: 0, listings: [] }) };
+  };
+  const api = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: strict });
+  const results = await run({ api, storesPath, resultsPath, log: () => {} });
+  const chevy = results.stores.find((s) => s.name === "Morlan Chevrolet");
+  assert.equal(chevy.error, "");
+  assert.equal(chevy.cars.length, 300);
+});
+
+test("if MarketCheck ignores the price filter, the scan stops instead of splitting forever", async () => {
+  const { storesPath, resultsPath } = await setup();
+  const area = [];
+  for (let i = 0; i < 700; i++) area.push(listing({ vin: `V${i}`, price: 9000 + i, dealerId: i % 2 ? 111 : 600, dealerName: i % 2 ? "Autry Morlan Chevrolet" : "Other Lot", city: "Dexter" }));
+  let calls = 0;
+  const ignores = async (url) => {
+    const p = Object.fromEntries(new URL(url).searchParams);
+    if (p.radius === "10") calls++;
+    if (p.radius !== "10") return { ok: true, json: async () => ({ num_found: 0, listings: [] }) };
+    const start = Number(p.start || 0);
+    const rows = Number(p.rows || 10);
+    return { ok: true, json: async () => ({ num_found: area.length, listings: area.slice(start, start + rows) }) };
+  };
+  const api = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: ignores });
+  const results = await run({ api, storesPath, resultsPath, log: () => {} });
+  assert.ok(calls < 40, `used ${calls} area calls`);
+  assert.equal(results.stores[0].cars.length, 250);
+});
+
+test("gives up and saves when the plan's lookups are used up", async () => {
+  const { storesPath, resultsPath } = await setup();
+  await run({ api: makeApi({ apiKey: "K", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch([]) }), storesPath, resultsPath, now: new Date("2026-01-01"), log: () => {} });
+  let calls = 0;
+  const quota = async (url) => {
+    const p = Object.fromEntries(new URL(url).searchParams);
+    if (p.sort_by) {
+      calls++;
+      return { ok: false, status: 429, text: async () => "API rate limit exceeded" };
+    }
+    return fakeFetch([])(url);
+  };
+  const api = makeApi({ apiKey: "K", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: quota });
+  const results = await run({ api, storesPath, resultsPath, log: () => {} });
+  assert.equal(calls, 3);
+  assert.match(results.warning, /rate limit/);
+});
+
+test("a used-up monthly quota stops the run on the first answer", async () => {
+  const { storesPath, resultsPath } = await setup();
+  let calls = 0;
+  const empty = async () => {
+    calls++;
+    return { ok: false, status: 429, text: async () => '{"message": "Monthly API quota exhausted"}' };
+  };
+  const api = makeApi({ apiKey: "K", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [1, 1], fetchImpl: empty });
+  const results = await run({ api, storesPath, resultsPath, log: () => {} });
+  assert.equal(calls, 3, "one call plus its two retries, then stop");
+  assert.match(results.warning, /used up/);
+  assert.match(results.stores[1].error, /used up/);
 });
