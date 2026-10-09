@@ -1,0 +1,66 @@
+name: Morlan price check
+
+on:
+  schedule:
+    # Every day at 6:17am Central (11:17 UTC).
+    - cron: "17 11 * * *"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "inventory-agent/**"
+      - ".github/workflows/inventory-agent.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: inventory-agent
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test inventory-agent/test/*.test.mjs
+
+  update:
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check for the MarketCheck key
+        id: key
+        env:
+          MARKETCHECK_API_KEY: ${{ secrets.MARKETCHECK_API_KEY }}
+        run: |
+          if [ -z "$MARKETCHECK_API_KEY" ]; then
+            echo "::warning::No MARKETCHECK_API_KEY secret yet. Add it under Settings > Secrets and variables > Actions, then run this again."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Shop every Morlan car
+        if: steps.key.outputs.ready == 'true'
+        env:
+          MARKETCHECK_API_KEY: ${{ secrets.MARKETCHECK_API_KEY }}
+        run: node inventory-agent/scripts/update.mjs
+      - name: Save the new prices
+        if: steps.key.outputs.ready == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add inventory-agent/data/results.json inventory-agent/stores.json
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+          else
+            git commit -m "Update Morlan price check"
+            git push
+          fi

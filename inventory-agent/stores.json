@@ -1,0 +1,79 @@
+{
+  "_help": "The Morlan stores the agent checks. To add or fix a store, copy one block and change it. 'website' is the store's own site with no https:// or www (leave it empty if you don't know it). 'nameWords' are words that are always in the store's name, used to tell stores in the same town apart. 'dealerId' is filled in by the agent after its first run - leave it empty.",
+  "searchRadiusMiles": 550,
+  "usedMilesWindow": 15000,
+  "maxCarsCheckedPerRun": 400,
+  "recheckAfterDays": 3,
+  "stores": [
+    {
+      "name": "Morlan Chevrolet",
+      "website": "morlanchevrolet.com",
+      "nameWords": [
+        "Morlan",
+        "Chevrolet"
+      ],
+      "city": "Dexter",
+      "state": "MO",
+      "zip": "63841",
+      "latitude": 36.7959,
+      "longitude": -89.9579,
+      "dealerId": ""
+    },
+    {
+      "name": "Morlan Nissan",
+      "website": "morlannissan.com",
+      "nameWords": [
+        "Morlan",
+        "Nissan"
+      ],
+      "city": "Dexter",
+      "state": "MO",
+      "zip": "63841",
+      "latitude": 36.7959,
+      "longitude": -89.9579,
+      "dealerId": ""
+    },
+    {
+      "name": "Morlan Ford Lincoln",
+      "website": "morlanford.com",
+      "nameWords": [
+        "Morlan",
+        "Ford"
+      ],
+      "city": "Sikeston",
+      "state": "MO",
+      "zip": "63801",
+      "latitude": 36.8762,
+      "longitude": -89.5878,
+      "dealerId": ""
+    },
+    {
+      "name": "Morlan Dodge",
+      "website": "morlandodge.com",
+      "nameWords": [
+        "Morlan",
+        "Dodge"
+      ],
+      "city": "Sikeston",
+      "state": "MO",
+      "zip": "63801",
+      "latitude": 36.8762,
+      "longitude": -89.5878,
+      "dealerId": ""
+    },
+    {
+      "name": "John Morlan Chrysler Dodge Jeep Ram",
+      "website": "",
+      "nameWords": [
+        "Morlan",
+        "Jeep"
+      ],
+      "city": "Cape Girardeau",
+      "state": "MO",
+      "zip": "63701",
+      "latitude": 37.3059,
+      "longitude": -89.5181,
+      "dealerId": ""
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Morlan Price Check</title>
+  <meta name="description" content="Every new and used car at the Morlan stores, next to the cheapest identical car within 550 miles.">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <h1>Morlan Price Check</h1>
+      <p class="sub">Every new and used car at the Morlan stores, next to the cheapest <strong>identical</strong> car for sale within <span id="radius">550</span> miles.</p>
+      <p class="updated" id="updated">Loading…</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="stats" id="stats" aria-label="Summary"></section>
+
+    <section class="filters" aria-label="Filters">
+      <label>Store
+        <select id="f-store"><option value="">All stores</option></select>
+      </label>
+      <label>New or used
+        <select id="f-type">
+          <option value="">Both</option>
+          <option value="new">New</option>
+          <option value="used">Used</option>
+        </select>
+      </label>
+      <label>Sort
+        <select id="f-sort">
+          <option value="savings">Biggest savings first</option>
+          <option value="price-desc">Our price, high to low</option>
+          <option value="price-asc">Our price, low to high</option>
+          <option value="year">Newest year first</option>
+        </select>
+      </label>
+      <label class="grow">Search
+        <input id="f-search" type="search" placeholder="Year, make, model, stock # or VIN">
+      </label>
+      <label class="check">
+        <input id="f-only" type="checkbox" checked> Only cars with a cheaper match
+      </label>
+    </section>
+
+    <p class="count" id="count"></p>
+    <section id="list" class="list" aria-live="polite"></section>
+
+    <section class="notes">
+      <h2>How this works</h2>
+      <ul>
+        <li><strong>Identical</strong> means the same year, make, model, trim and drive (4WD, AWD and so on). Used cars also have to be within 15,000 miles of ours.</li>
+        <li>Prices and listings come from dealer websites across the country, collected by MarketCheck. A listing can be sold or repriced before this page updates, so call before you go.</li>
+        <li>Auction cars (Manheim, ADESA, ACV) aren't included. Those sites need a dealer login.</li>
+        <li>The list updates by itself once a day.</li>
+      </ul>
+    </section>
+  </main>
+
+  <template id="car-tpl">
+    <article class="car">
+      <div class="ours">
+        <img class="photo" alt="" loading="lazy">
+        <div>
+          <p class="tag"></p>
+          <h3 class="title"></h3>
+          <p class="meta"></p>
+          <p class="price"></p>
+        </div>
+      </div>
+      <div class="theirs"></div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
