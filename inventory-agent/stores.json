@@ -1,11 +1,12 @@
 {
-  "_help": "The Morlan stores the agent checks. To add or fix a store, copy one block and change it. 'nameWords' must all be in the store's name and 'nameWordsNot' must not be, which tells stores in the same town apart. 'dealerId' is filled in by the agent - leave it empty for a new store. searchRadiusMiles is how far to look for cheaper cars (the MarketCheck plan allows up to 100). monthlyCallBudget caps MarketCheck lookups per calendar month; each day gets an even share of what's left. recheckAfterDays is how long a car's answer is kept before it is shopped again.",
+  "_help": "The Morlan stores the agent checks. To add or fix a store, copy one block and change it. 'nameWords' must all be in the store's name and 'nameWordsNot' must not be, which tells stores in the same town apart. 'dealerId' is filled in by the agent - leave it empty for a new store. searchRadiusMiles is how far to look for cheaper cars (the MarketCheck plan allows up to 100). monthlyCallBudget caps MarketCheck lookups per calendar month. runEveryDays must match the schedule in .github/workflows/inventory-agent.yml (7 = weekly); each run gets that many days' share of what's left this month. recheckAfterDays is how long a car's answer is kept before it is shopped again.",
   "searchRadiusMiles": 100,
   "usedMilesWindow": 15000,
-  "maxCarsCheckedPerRun": 400,
-  "recheckAfterDays": 7,
+  "maxCarsCheckedPerRun": 600,
+  "recheckAfterDays": 6,
   "maxApiCallsPerRun": 1000,
-  "monthlyCallBudget": 4000,
+  "monthlyCallBudget": 2000,
+  "runEveryDays": 7,
   "stores": [
     {
       "name": "Autry Morlan Chevrolet",

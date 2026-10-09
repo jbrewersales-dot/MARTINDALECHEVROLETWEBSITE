@@ -87,7 +87,7 @@ function renderCar(c) {
   const theirs = node.querySelector(".theirs");
   const matches = c.matches || [];
   if (!c.checkedAt) {
-    theirs.append(el("p", { class: "none" }, "Not checked yet. It will be in the next daily run."));
+    theirs.append(el("p", { class: "none" }, "Not checked yet. It will be in the next weekly run."));
   } else if (!matches.length) {
     theirs.classList.add("best");
     theirs.append(el("p", { class: "none good" }, `No identical car cheaper than ours within ${data.radiusMiles || 550} miles.`));
@@ -136,7 +136,7 @@ function render() {
   const list = $("list");
   list.replaceChildren();
   if (!shown.length) {
-    list.append(el("p", { class: "empty" }, cars.length ? "No cars match these filters." : "No cars yet. The list fills in after the first daily run."));
+    list.append(el("p", { class: "empty" }, cars.length ? "No cars match these filters." : "No cars yet. The list fills in after the first weekly run."));
     return;
   }
   // Draw in chunks so a few thousand cars don't freeze a phone.
@@ -189,7 +189,7 @@ async function load() {
     ? `Last updated ${new Date(data.updatedAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}` +
       (data.waitingToBeChecked ? ` · ${data.waitingToBeChecked} cars still waiting to be checked` : "") +
       (data.usage?.budget ? ` · ${data.usage.calls.toLocaleString("en-US")} of ${data.usage.budget.toLocaleString("en-US")} lookups used this month` : "")
-    : "Not run yet. The list fills in after the first daily run.";
+    : "Not run yet. The list fills in after the first weekly run.";
 
   cars = [];
   for (const s of data.stores || []) {
