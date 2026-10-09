@@ -322,3 +322,21 @@ test("nameWordsNot tells two 'Autry Morlan' stores in one town apart", async () 
   assert.equal(results.stores[0].dealerId, "4444");
   assert.deepEqual(results.stores[0].cars.map((c) => c.vin), ["C1"]);
 });
+
+test("weekly runs: each run gets a week's share, and the last week may spend the rest", async () => {
+  const { storesPath, resultsPath } = await setup();
+  const cfg = JSON.parse(await readFile(storesPath, "utf8"));
+  cfg.monthlyCallBudget = 300; // June has 30 days
+  cfg.runEveryDays = 7;
+  await writeFile(storesPath, JSON.stringify(cfg));
+  const logs = [];
+  const api = makeApi({ apiKey: "K", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch([]) });
+  await run({ api, storesPath, resultsPath, now: new Date("2026-06-01T12:00:00Z"), log: (m) => logs.push(m) });
+  assert.ok(logs.some((m) => m.includes("up to 70 this run")), logs.join("\n")); // 300 * 7/30
+
+  const logs2 = [];
+  const api2 = makeApi({ apiKey: "K", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch([]) });
+  const r = await run({ api: api2, storesPath, resultsPath, now: new Date("2026-06-29T12:00:00Z"), log: (m) => logs2.push(m) });
+  const left = 300 - (r.usage.calls - api2.calls);
+  assert.ok(logs2.some((m) => m.includes(`up to ${left} this run`)), logs2.join("\n"));
+});

@@ -12,7 +12,7 @@ A public page at **/inventory-agent/** (for example `https://www.k2bnetworksolut
 It lists every new and used car at the Sikeston Morlan stores and, next to each one, the cheapest
 **identical** car (same year, make, model, trim and drive) for sale at another dealer nearby (100 miles on the current MarketCheck plan; raise `searchRadiusMiles` after upgrading).
 
-Listings come from the MarketCheck API. A GitHub Action runs once a day, updates
+Listings come from the MarketCheck API. A GitHub Action runs once a week (Monday morning), updates
 `inventory-agent/data/results.json`, and the page reads that file.
 
 **One-time setup**
@@ -22,7 +22,7 @@ Listings come from the MarketCheck API. A GitHub Action runs once a day, updates
    Name: `MARKETCHECK_API_KEY`. Value: your key.
 3. Go to **Actions** → **Morlan price check** → **Run workflow** to fill the page the first time.
 
-**Current setup:** the three Sikeston stores (Autry Morlan Chevrolet, Morlan Ford Lincoln, Morlan Dodge), a 100 mile search, and at most 4,000 MarketCheck lookups a month (`monthlyCallBudget`), spread evenly over the days left in the month.
+**Current setup:** the three Sikeston stores (Autry Morlan Chevrolet, Morlan Ford Lincoln, Morlan Dodge), a 100 mile search, and at most 2,000 MarketCheck lookups a month (`monthlyCallBudget`). It runs every Monday, and each run gets a week's share of what's left for the month.
 
 **Changing things:** edit `inventory-agent/stores.json` to add or fix a store, change the search distance
 (`searchRadiusMiles`), how close used-car mileage has to be (`usedMilesWindow`), or how many cars are

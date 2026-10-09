@@ -83,7 +83,7 @@ export function makeApi({ apiKey, base = DEFAULT_BASE, fetchImpl = fetch, minGap
   let rateLimitedInARow = 0;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   async function get(endpoint, params) {
-    if (calls >= limit) throw new BudgetError(`Reached today's share of the monthly lookup budget (${limit} calls). The rest wait for tomorrow.`);
+    if (calls >= limit) throw new BudgetError(`Reached this run's share of the monthly lookup budget (${limit} calls). The rest wait for the next run.`);
     const url = new URL(base.replace(/\/$/, "") + endpoint);
     url.searchParams.set("api_key", apiKey);
     for (const [k, v] of Object.entries(params)) {
@@ -108,7 +108,7 @@ export function makeApi({ apiKey, base = DEFAULT_BASE, fetchImpl = fetch, minGap
       // The results file is public, so never let the key leak into it.
       const body = (await res.text()).split(apiKey).join("***").slice(0, 300);
       if (/quota/i.test(body)) {
-        throw new QuotaError(`MarketCheck says this plan's lookups are used up (${body}). It will try again on the next daily run.`);
+        throw new QuotaError(`MarketCheck says this plan's lookups are used up (${body}). It will try again on the next run.`);
       }
       throw new Error(`MarketCheck said ${res.status} for ${endpoint}: ${body}`);
     }
@@ -262,6 +262,7 @@ export async function run({
     recheckAfterDays: config.recheckAfterDays ?? 3,
     maxApiCallsPerRun: config.maxApiCallsPerRun ?? 1000,
     monthlyCallBudget: config.monthlyCallBudget ?? Infinity,
+    runEveryDays: config.runEveryDays ?? 1,
   };
 
   let previous = { stores: [] };
@@ -277,9 +278,12 @@ export async function run({
   const remaining = Math.max(0, settings.monthlyCallBudget - usedBefore);
   const daysInMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate();
   const daysLeft = daysInMonth - now.getUTCDate() + 1;
-  const todaysShare = Math.min(settings.maxApiCallsPerRun, Math.floor(remaining / daysLeft));
+  // A run every runEveryDays days gets that many days' worth of what's left;
+  // the last run of the month may spend all of it.
+  const share = Math.min(1, settings.runEveryDays / daysLeft);
+  const todaysShare = Math.min(settings.maxApiCallsPerRun, Math.floor(remaining * share));
   api.setLimit?.(todaysShare);
-  log(`Budget: ${usedBefore} of ${settings.monthlyCallBudget} lookups used this month; up to ${todaysShare} today.`);
+  log(`Budget: ${usedBefore} of ${settings.monthlyCallBudget} lookups used this month; up to ${todaysShare} this run.`);
 
   const previousByVin = new Map();
   for (const s of previous.stores || []) for (const c of s.cars || []) previousByVin.set(c.vin, c);
@@ -289,7 +293,7 @@ export async function run({
   const stores = [];
   const scans = new Map();
   let quotaHit = ""; // MarketCheck refused: shown as a warning
-  let budgetHit = false; // our own daily share ran out: not an error
+  let budgetHit = false; // our own per-run share ran out: not an error
   for (const store of config.stores) {
     const old = (previous.stores || []).find((s) => s.name === store.name);
     const out = { name: store.name, city: store.city, state: store.state, dealerId: "", cars: [], error: "" };
@@ -330,7 +334,7 @@ export async function run({
   const morlanDealerIds = new Set(stores.map((s) => s.out.dealerId).filter(Boolean));
 
   // Step 2: shop each car. Cars checked recently at the same price keep their
-  // old answer so the daily run stays inside the API budget.
+  // old answer so each run stays inside the API budget.
   const fresh = (c) => {
     const old = previousByVin.get(c.vin);
     return old && old.price === c.price && old.checkedAt && now - new Date(old.checkedAt) < settings.recheckAfterDays * DAY_MS;
