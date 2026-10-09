@@ -151,7 +151,15 @@ async function loadInventory(api, dealerId, store, log) {
   let skipped = 0;
   let firstSkipped = null;
   for (let start = 0; start < MAX_INVENTORY_PER_STORE; start += PAGE_SIZE) {
-    const r = await api.search({ dealer_id: dealerId, rows: PAGE_SIZE, start });
+    // MarketCheck only sends the cars back when the search has a location.
+    const r = await api.search({
+      dealer_id: dealerId,
+      latitude: store.latitude,
+      longitude: store.longitude,
+      radius: 25,
+      rows: PAGE_SIZE,
+      start,
+    });
     const listings = r.listings || [];
     if (start === 0) {
       log(`  ${store.name}: dealer ${dealerId} has ${r.num_found ?? "?"} listings, ${listings.length} sent back`);
@@ -197,6 +205,10 @@ async function findCheaper(api, car, store, settings, morlanDealerIds) {
     params.miles_range = `${Math.max(0, car.miles - w)}-${car.miles + w}`;
   }
   const r = await api.search(params);
+  if (!findCheaper.logged) {
+    findCheaper.logged = true;
+    console.log(`  First price check (${car.year} ${car.make} ${car.model}, ${settings.searchRadiusMiles} mi): ${r.num_found ?? "?"} found, ${(r.listings || []).length} sent back`);
+  }
   return (r.listings || [])
     .map(toCar)
     .filter((o) => o.vin !== car.vin && o.price > 0 && o.price < car.price)
