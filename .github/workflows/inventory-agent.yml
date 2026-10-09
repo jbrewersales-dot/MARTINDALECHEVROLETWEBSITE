@@ -47,11 +47,6 @@ jobs:
           else
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
-      - name: Probe MarketCheck (temporary)
-        if: steps.key.outputs.ready == 'true'
-        env:
-          MARKETCHECK_API_KEY: ${{ secrets.MARKETCHECK_API_KEY }}
-        run: node inventory-agent/scripts/probe.mjs
       - name: Shop every Morlan car
         if: steps.key.outputs.ready == 'true'
         env:

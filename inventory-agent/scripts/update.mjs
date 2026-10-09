@@ -15,7 +15,6 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
 const DEFAULT_BASE = "https://api.marketcheck.com/v2";
 const PAGE_SIZE = 50;
-const MAX_INVENTORY_PER_STORE = 3000;
 const MATCHES_KEPT = 5;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -106,84 +105,73 @@ export function makeApi({ apiKey, base = DEFAULT_BASE, fetchImpl = fetch, minGap
     get calls() {
       return calls;
     },
-    key: apiKey,
   };
 }
 
 const dealerLabel = (d) => `${d?.name || "?"} (${d?.city || "?"}, ${d?.state || "?"}) id ${d?.id ?? "?"}`;
+const SCAN_RADIUS_MILES = 10;
+const MAX_SCAN = 3000;
 
-// Find MarketCheck's id for a store: first by its website, then by looking
-// at listings right around the store's address.
-async function findDealerId(api, store, log) {
-  if (store.dealerId) return String(store.dealerId);
-  if (store.website) {
-    const r = await api.search({ source: store.website, rows: 5 });
-    const listings = r.listings || [];
-    log(`  ${store.name}: website ${store.website} has ${r.num_found ?? listings.length} listings` +
-      (listings[0] ? `, sold by ${dealerLabel(listings[0].dealer)}` : ""));
-    const hit = listings.find((l) => nameFits(l.dealer, store) && cityFits(l.dealer, store));
-    if (hit?.dealer?.id != null) return String(hit.dealer.id);
+// Every listing within a few miles of a store. On some MarketCheck plans a
+// search by dealer_id or website only returns a count with no cars, while a
+// search by location returns the cars, so the store's cars are picked out of
+// this. Stores in the same town share one scan.
+async function scanArea(api, store, cache) {
+  const key = `${store.latitude},${store.longitude}`;
+  if (!cache.has(key)) {
+    cache.set(key, (async () => {
+      const all = [];
+      for (let start = 0; start < MAX_SCAN; start += PAGE_SIZE) {
+        const r = await api.search({
+          latitude: store.latitude,
+          longitude: store.longitude,
+          radius: SCAN_RADIUS_MILES,
+          rows: PAGE_SIZE,
+          start,
+        });
+        const listings = r.listings || [];
+        all.push(...listings);
+        if (listings.length < PAGE_SIZE || start + PAGE_SIZE >= (r.num_found ?? 0)) break;
+      }
+      return all;
+    })());
   }
-  const seen = new Map();
-  for (let start = 0; start < 500; start += PAGE_SIZE) {
-    const r = await api.search({
-      latitude: store.latitude,
-      longitude: store.longitude,
-      radius: 10,
-      rows: PAGE_SIZE,
-      start,
-    });
-    const listings = r.listings || [];
-    for (const l of listings) if (l.dealer?.id != null) seen.set(String(l.dealer.id), l.dealer);
-    const hit = listings.find((l) => nameFits(l.dealer, store) && cityFits(l.dealer, store));
-    if (hit?.dealer?.id != null) {
-      log(`  ${store.name}: matched ${dealerLabel(hit.dealer)} near its address`);
-      return String(hit.dealer.id);
-    }
-    if (listings.length < PAGE_SIZE) break;
-  }
-  log(`  ${store.name}: no match. Dealers seen near its address: ${[...seen.values()].map(dealerLabel).join("; ") || "none"}`);
-  return "";
+  return cache.get(key);
 }
 
-async function loadInventory(api, dealerId, store, log) {
+// Which dealer in the scan is this store: the saved id if it has cars here,
+// otherwise the dealer whose name has all of the store's nameWords.
+function pickDealer(listings, store) {
+  if (store.dealerId && listings.some((l) => String(l.dealer?.id) === String(store.dealerId))) {
+    return String(store.dealerId);
+  }
+  const hit = listings.find((l) => nameFits(l.dealer, store) && cityFits(l.dealer, store));
+  return hit?.dealer?.id != null ? String(hit.dealer.id) : "";
+}
+
+function storeCars(listings, dealerId, store, log) {
   const cars = [];
+  const seen = new Set();
   let skipped = 0;
-  let firstSkipped = null;
-  for (let start = 0; start < MAX_INVENTORY_PER_STORE; start += PAGE_SIZE) {
-    // MarketCheck only sends the cars back when the search has a location.
-    const r = await api.search({
-      dealer_id: dealerId,
-      latitude: store.latitude,
-      longitude: store.longitude,
-      radius: 25,
-      rows: PAGE_SIZE,
-      start,
-    });
-    const listings = r.listings || [];
-    if (start === 0) {
-      log(`  ${store.name}: dealer ${dealerId} has ${r.num_found ?? "?"} listings, ${listings.length} sent back`);
-      if (!listings.length && r.num_found) {
-        const peek = JSON.stringify(r).split(api.key).join("***").slice(0, 600);
-        log(`  ${store.name}: MarketCheck answered ${peek}`);
-      }
-    }
-    for (const l of listings) {
-      const car = toCar(l);
-      if (car.vin && car.price > 0 && car.year && car.make && car.model) cars.push(car);
-      else {
-        skipped++;
-        firstSkipped ??= car;
-      }
-    }
-    if (listings.length < PAGE_SIZE || start + PAGE_SIZE >= (r.num_found ?? 0)) break;
+  for (const l of listings) {
+    if (String(l.dealer?.id) !== dealerId) continue;
+    const car = toCar(l);
+    if (seen.has(car.vin)) continue;
+    seen.add(car.vin);
+    if (car.vin && car.price > 0 && car.year && car.make && car.model) cars.push(car);
+    else skipped++;
   }
-  if (skipped) {
-    const c = firstSkipped;
-    log(`  ${store.name}: skipped ${skipped} listings with no price or missing details (e.g. ${c.year} ${c.make} ${c.model} price ${c.price})`);
-  }
+  if (skipped) log(`  ${store.name}: skipped ${skipped} listings with no price posted`);
   return cars;
 }
+
+function dealersIn(listings) {
+  const seen = new Map();
+  for (const l of listings) if (l.dealer?.id != null) seen.set(String(l.dealer.id), l.dealer);
+  return [...seen.values()].map(dealerLabel).join("; ") || "none";
+}
+
+export class RadiusLimitError extends Error {}
 
 async function findCheaper(api, car, store, settings, morlanDealerIds) {
   const params = {
@@ -204,10 +192,12 @@ async function findCheaper(api, car, store, settings, morlanDealerIds) {
     const w = settings.usedMilesWindow;
     params.miles_range = `${Math.max(0, car.miles - w)}-${car.miles + w}`;
   }
-  const r = await api.search(params);
-  if (!findCheaper.logged) {
-    findCheaper.logged = true;
-    console.log(`  First price check (${car.year} ${car.make} ${car.model}, ${settings.searchRadiusMiles} mi): ${r.num_found ?? "?"} found, ${(r.listings || []).length} sent back`);
+  let r;
+  try {
+    r = await api.search(params);
+  } catch (err) {
+    if (/radius limit/i.test(err.message)) throw new RadiusLimitError(err.message);
+    throw err;
   }
   return (r.listings || [])
     .map(toCar)
@@ -246,18 +236,25 @@ export async function run({
   // Step 1: find each store and load what it has on the lot.
   let configChanged = false;
   const stores = [];
+  const scans = new Map();
   for (const store of config.stores) {
     const out = { name: store.name, city: store.city, state: store.state, dealerId: "", cars: [], error: "" };
     try {
-      const id = await findDealerId(api, store, log);
-      if (!id) throw new Error("Could not find this store in MarketCheck. Check its website and nameWords in stores.json.");
+      const listings = await scanArea(api, store, scans);
+      const id = pickDealer(listings, store);
+      if (!id) {
+        throw new Error(
+          `Could not find this store in MarketCheck near ${store.city}, ${store.state}. Dealers there: ${dealersIn(listings)}`
+        );
+      }
       if (store.dealerId !== id) {
         store.dealerId = id;
         configChanged = true;
       }
       out.dealerId = id;
-      out.cars = await loadInventory(api, id, store, log);
-      log(`${store.name}: ${out.cars.length} cars`);
+      out.cars = storeCars(listings, id, store, log);
+      const name = listings.find((l) => String(l.dealer?.id) === id)?.dealer;
+      log(`${store.name}: ${out.cars.length} cars (${dealerLabel(name)})`);
     } catch (err) {
       // Keep showing yesterday's cars rather than an empty store.
       const old = (previous.stores || []).find((s) => s.name === store.name);
@@ -294,12 +291,19 @@ export async function run({
   queue.sort((a, b) => (a.car.checkedAt || "").localeCompare(b.car.checkedAt || ""));
   const todo = queue.slice(0, settings.maxCarsCheckedPerRun);
   let checked = 0;
+  let warning = "";
   for (const { car, store } of todo) {
     try {
       car.matches = await findCheaper(api, car, store, settings, morlanDealerIds);
       car.checkedAt = now.toISOString();
       checked++;
     } catch (err) {
+      if (err instanceof RadiusLimitError) {
+        // Every other car would fail the same way, so stop spending calls.
+        warning = `Your MarketCheck plan doesn't allow a ${settings.searchRadiusMiles} mile search. Lower searchRadiusMiles in stores.json or upgrade the plan. (${err.message})`;
+        log(warning);
+        break;
+      }
       log(`${car.year} ${car.make} ${car.model} ${car.vin}: ${err.message}`);
     }
   }
@@ -310,6 +314,7 @@ export async function run({
     checkedThisRun: checked,
     waitingToBeChecked: queue.length - checked,
     apiCalls: api.calls,
+    warning,
     stores: stores.map(({ out }) => out),
   };
   await writeFile(resultsPath, JSON.stringify(results, null, 1) + "\n");

@@ -43,15 +43,11 @@ function fakeFetch(seen) {
     const p = Object.fromEntries(u.searchParams);
     seen.push(p);
     let listings = [];
-    if (p.source === "morlanchevrolet.com") listings = [ourTruck];
-    else if (p.source) listings = [];
+    if (p.dealer_id || p.source) listings = []; // like the real plan: a count but no cars
     else if (p.radius === "10") {
-      // Looking around a store's address for its dealer id.
-      listings = [ourTruck, ourFord];
-    } else if (p.dealer_id === "111") listings = [ourTruck, ourNew];
-    else if (p.dealer_id === "222") listings = [ourFord];
-    else if (p.dealer_id) listings = [];
-    else if (p.model === "Silverado 1500") listings = comps;
+      // Everything for sale around a store, including other dealers.
+      listings = [ourTruck, ourNew, ourFord, listing({ vin: "LOCAL1", price: 9000, dealerId: 500, dealerName: "Corner Lot", city: "Dexter" })];
+    } else if (p.model === "Silverado 1500") listings = comps;
     else listings = [];
     return { ok: true, json: async () => ({ num_found: listings.length, listings }) };
   };
@@ -86,7 +82,8 @@ test("finds the cheaper identical car and skips non-matches and sister stores", 
   const chevy = results.stores.find((s) => s.name === "Morlan Chevrolet");
   const ford = results.stores.find((s) => s.name === "Morlan Ford Lincoln");
   assert.equal(chevy.dealerId, "111");
-  assert.equal(ford.dealerId, "222", "found by looking near the address when the website lookup misses");
+  assert.equal(ford.dealerId, "222");
+  assert.deepEqual(ford.cars.map((c) => c.vin), ["OURFORD"], "only the store's own cars, not other lots nearby");
   assert.equal(chevy.cars.length, 2);
 
   const truck = chevy.cars.find((c) => c.vin === "OURTRUCK");
@@ -96,6 +93,7 @@ test("finds the cheaper identical car and skips non-matches and sister stores", 
   // The comparison search used the 550 mile radius and the mileage window.
   const compSearch = seen.find((p) => p.model === "Silverado 1500");
   assert.equal(compSearch.radius, "550");
+  assert.equal(seen.filter((p) => p.radius === "10").length, 2, "one area scan per town");
   assert.equal(compSearch.miles_range, "15000-45000");
   assert.equal(compSearch.price_range, "1-39999");
 
@@ -171,4 +169,22 @@ test("spaces out calls", async () => {
   await api.search({});
   await api.search({});
   assert.ok(times[2] - times[0] >= 95, `calls were ${times[2] - times[0]}ms apart`);
+});
+
+test("stops checking and says so when the plan's radius is too small", async () => {
+  const { storesPath, resultsPath } = await setup();
+  let priceChecks = 0;
+  const limited = async (url) => {
+    const p = Object.fromEntries(new URL(url).searchParams);
+    if (p.price_range) {
+      priceChecks++;
+      return { ok: false, status: 422, text: async () => '{"code":422,"message":"Subscribed package radius limit of 100 miles exceeded"}' };
+    }
+    return fakeFetch([])(url);
+  };
+  const api = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: limited });
+  const results = await run({ api, storesPath, resultsPath, log: () => {} });
+  assert.equal(priceChecks, 1);
+  assert.match(results.warning, /100 miles/);
+  assert.equal(results.stores[0].cars.length, 2, "cars still listed");
 });

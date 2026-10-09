@@ -10,7 +10,7 @@ To change where demo requests are emailed, edit `CONTACT_EMAIL` at the top of `s
 
 A public page at **/inventory-agent/** (for example `https://www.k2bnetworksolutions.com/inventory-agent/`).
 It lists every new and used car at the Morlan stores and, next to each one, the cheapest
-**identical** car (same year, make, model, trim and drive) for sale at another dealer within 550 miles.
+**identical** car (same year, make, model, trim and drive) for sale at another dealer nearby (100 miles on the current MarketCheck plan; raise `searchRadiusMiles` after upgrading).
 
 Listings come from the MarketCheck API. A GitHub Action runs once a day, updates
 `inventory-agent/data/results.json`, and the page reads that file.
