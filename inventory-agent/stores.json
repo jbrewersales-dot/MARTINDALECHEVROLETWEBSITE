@@ -1,42 +1,34 @@
 {
-  "_help": "The Morlan stores the agent checks. To add or fix a store, copy one block and change it. 'nameWords' are words that are always in the store's name, used to tell stores in the same town apart. 'dealerId' is filled in by the agent after its first run - leave it empty. searchRadiusMiles is how far to look for cheaper cars; your MarketCheck plan allows up to 100 - raise it if you upgrade.",
+  "_help": "The Morlan stores the agent checks. To add or fix a store, copy one block and change it. 'nameWords' must all be in the store's name and 'nameWordsNot' must not be, which tells stores in the same town apart. 'dealerId' is filled in by the agent - leave it empty for a new store. searchRadiusMiles is how far to look for cheaper cars (the MarketCheck plan allows up to 100). monthlyCallBudget caps MarketCheck lookups per calendar month; each day gets an even share of what's left. recheckAfterDays is how long a car's answer is kept before it is shopped again.",
   "searchRadiusMiles": 100,
   "usedMilesWindow": 15000,
   "maxCarsCheckedPerRun": 400,
-  "recheckAfterDays": 3,
+  "recheckAfterDays": 7,
   "maxApiCallsPerRun": 1000,
+  "monthlyCallBudget": 4000,
   "stores": [
     {
-      "name": "Morlan Chevrolet",
-      "website": "morlanchevrolet.com",
+      "name": "Autry Morlan Chevrolet",
       "nameWords": [
-        "Morlan",
-        "Chevrolet"
+        "Morlan"
       ],
-      "city": "Dexter",
-      "state": "MO",
-      "zip": "63841",
-      "latitude": 36.7959,
-      "longitude": -89.9579,
-      "dealerId": "1018275"
-    },
-    {
-      "name": "Morlan Nissan",
-      "website": "morlannissan.com",
-      "nameWords": [
-        "Morlan",
+      "nameWordsNot": [
+        "Dodge",
+        "Chrysler",
+        "Jeep",
+        "Ford",
+        "Lincoln",
         "Nissan"
       ],
-      "city": "Dexter",
+      "city": "Sikeston",
       "state": "MO",
-      "zip": "63841",
-      "latitude": 36.7959,
-      "longitude": -89.9579,
-      "dealerId": "1075492"
+      "zip": "63801",
+      "latitude": 36.8762,
+      "longitude": -89.5878,
+      "dealerId": ""
     },
     {
       "name": "Morlan Ford Lincoln",
-      "website": "morlanford.com",
       "nameWords": [
         "Morlan",
         "Ford"
@@ -50,7 +42,6 @@
     },
     {
       "name": "Morlan Dodge",
-      "website": "morlandodge.com",
       "nameWords": [
         "Morlan",
         "Dodge"
