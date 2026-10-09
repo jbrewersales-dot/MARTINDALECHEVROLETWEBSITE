@@ -1,9 +1,10 @@
 {
- "updatedAt": "2026-10-09T20:09:31.496Z",
- "radiusMiles": 550,
+ "updatedAt": "2026-10-09T20:11:36.215Z",
+ "radiusMiles": 100,
  "checkedThisRun": 0,
  "waitingToBeChecked": 0,
- "apiCalls": 14,
+ "apiCalls": 26,
+ "warning": "",
  "stores": [
   {
    "name": "Morlan Chevrolet",
@@ -11,7 +12,7 @@
    "state": "MO",
    "dealerId": "1018275",
    "cars": [],
-   "error": ""
+   "error": "MarketCheck said 422 for /search/car/active: {\"code\":422,\"message\":\"Subscribed package pagination limit of 500 rows exceeded\"}"
   },
   {
    "name": "Morlan Nissan",
@@ -19,7 +20,7 @@
    "state": "MO",
    "dealerId": "1075492",
    "cars": [],
-   "error": ""
+   "error": "MarketCheck said 422 for /search/car/active: {\"code\":422,\"message\":\"Subscribed package pagination limit of 500 rows exceeded\"}"
   },
   {
    "name": "Morlan Ford Lincoln",
@@ -27,7 +28,7 @@
    "state": "MO",
    "dealerId": "1013739",
    "cars": [],
-   "error": ""
+   "error": "MarketCheck said 422 for /search/car/active: {\"code\":422,\"message\":\"Subscribed package pagination limit of 500 rows exceeded\"}"
   },
   {
    "name": "Morlan Dodge",
@@ -35,15 +36,15 @@
    "state": "MO",
    "dealerId": "1013722",
    "cars": [],
-   "error": ""
+   "error": "MarketCheck said 422 for /search/car/active: {\"code\":422,\"message\":\"Subscribed package pagination limit of 500 rows exceeded\"}"
   },
   {
    "name": "John Morlan Chrysler Dodge Jeep Ram",
-   "city": "Cape Girardeau",
-   "state": "MO",
+   "city": "Anna",
+   "state": "IL",
    "dealerId": "",
    "cars": [],
-   "error": "Could not find this store in MarketCheck. Check its website and nameWords in stores.json."
+   "error": "Could not find this store in MarketCheck near Anna, IL. Dealers there: Jp Sides Ford (Anna, IL) id 11046538; Jp Sides Chevrolet (Anna, IL) id 11049731"
   }
  ]
 }
