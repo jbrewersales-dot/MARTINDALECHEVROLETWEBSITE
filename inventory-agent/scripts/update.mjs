@@ -106,6 +106,7 @@ export function makeApi({ apiKey, base = DEFAULT_BASE, fetchImpl = fetch, minGap
     get calls() {
       return calls;
     },
+    key: apiKey,
   };
 }
 
@@ -152,7 +153,13 @@ async function loadInventory(api, dealerId, store, log) {
   for (let start = 0; start < MAX_INVENTORY_PER_STORE; start += PAGE_SIZE) {
     const r = await api.search({ dealer_id: dealerId, rows: PAGE_SIZE, start });
     const listings = r.listings || [];
-    if (start === 0) log(`  ${store.name}: dealer ${dealerId} has ${r.num_found ?? "?"} listings`);
+    if (start === 0) {
+      log(`  ${store.name}: dealer ${dealerId} has ${r.num_found ?? "?"} listings, ${listings.length} sent back`);
+      if (!listings.length && r.num_found) {
+        const peek = JSON.stringify(r).split(api.key).join("***").slice(0, 600);
+        log(`  ${store.name}: MarketCheck answered ${peek}`);
+      }
+    }
     for (const l of listings) {
       const car = toCar(l);
       if (car.vin && car.price > 0 && car.year && car.make && car.model) cars.push(car);
