@@ -72,16 +72,28 @@ export function isSameCar(ours, other) {
   return true;
 }
 
-export function makeApi({ apiKey, base = DEFAULT_BASE, fetchImpl = fetch }) {
+// MarketCheck turns away requests that come too fast (HTTP 429), so space
+// them out and wait and retry when it happens anyway.
+export function makeApi({ apiKey, base = DEFAULT_BASE, fetchImpl = fetch, minGapMs = 400, retryWaitsMs = [2000, 5000, 15000, 30000] }) {
   let calls = 0;
+  let lastCall = 0;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   async function get(endpoint, params) {
     const url = new URL(base.replace(/\/$/, "") + endpoint);
     url.searchParams.set("api_key", apiKey);
     for (const [k, v] of Object.entries(params)) {
       if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
     }
-    calls++;
-    const res = await fetchImpl(url.toString(), { headers: { Accept: "application/json" } });
+    let res;
+    for (let attempt = 0; ; attempt++) {
+      const wait = lastCall + minGapMs - Date.now();
+      if (wait > 0) await sleep(wait);
+      lastCall = Date.now();
+      calls++;
+      res = await fetchImpl(url.toString(), { headers: { Accept: "application/json" } });
+      if (res.status !== 429 || attempt >= retryWaitsMs.length) break;
+      await sleep(retryWaitsMs[attempt]);
+    }
     if (!res.ok) {
       // The results file is public, so never let the key leak into it.
       const body = (await res.text()).split(apiKey).join("***").slice(0, 300);
@@ -97,15 +109,21 @@ export function makeApi({ apiKey, base = DEFAULT_BASE, fetchImpl = fetch }) {
   };
 }
 
+const dealerLabel = (d) => `${d?.name || "?"} (${d?.city || "?"}, ${d?.state || "?"}) id ${d?.id ?? "?"}`;
+
 // Find MarketCheck's id for a store: first by its website, then by looking
 // at listings right around the store's address.
-async function findDealerId(api, store) {
+async function findDealerId(api, store, log) {
   if (store.dealerId) return String(store.dealerId);
   if (store.website) {
     const r = await api.search({ source: store.website, rows: 5 });
-    const hit = (r.listings || []).find((l) => nameFits(l.dealer, store) && cityFits(l.dealer, store));
+    const listings = r.listings || [];
+    log(`  ${store.name}: website ${store.website} has ${r.num_found ?? listings.length} listings` +
+      (listings[0] ? `, sold by ${dealerLabel(listings[0].dealer)}` : ""));
+    const hit = listings.find((l) => nameFits(l.dealer, store) && cityFits(l.dealer, store));
     if (hit?.dealer?.id != null) return String(hit.dealer.id);
   }
+  const seen = new Map();
   for (let start = 0; start < 500; start += PAGE_SIZE) {
     const r = await api.search({
       latitude: store.latitude,
@@ -115,23 +133,39 @@ async function findDealerId(api, store) {
       start,
     });
     const listings = r.listings || [];
+    for (const l of listings) if (l.dealer?.id != null) seen.set(String(l.dealer.id), l.dealer);
     const hit = listings.find((l) => nameFits(l.dealer, store) && cityFits(l.dealer, store));
-    if (hit?.dealer?.id != null) return String(hit.dealer.id);
+    if (hit?.dealer?.id != null) {
+      log(`  ${store.name}: matched ${dealerLabel(hit.dealer)} near its address`);
+      return String(hit.dealer.id);
+    }
     if (listings.length < PAGE_SIZE) break;
   }
+  log(`  ${store.name}: no match. Dealers seen near its address: ${[...seen.values()].map(dealerLabel).join("; ") || "none"}`);
   return "";
 }
 
-async function loadInventory(api, dealerId) {
+async function loadInventory(api, dealerId, store, log) {
   const cars = [];
+  let skipped = 0;
+  let firstSkipped = null;
   for (let start = 0; start < MAX_INVENTORY_PER_STORE; start += PAGE_SIZE) {
     const r = await api.search({ dealer_id: dealerId, rows: PAGE_SIZE, start });
     const listings = r.listings || [];
+    if (start === 0) log(`  ${store.name}: dealer ${dealerId} has ${r.num_found ?? "?"} listings`);
     for (const l of listings) {
       const car = toCar(l);
       if (car.vin && car.price > 0 && car.year && car.make && car.model) cars.push(car);
+      else {
+        skipped++;
+        firstSkipped ??= car;
+      }
     }
     if (listings.length < PAGE_SIZE || start + PAGE_SIZE >= (r.num_found ?? 0)) break;
+  }
+  if (skipped) {
+    const c = firstSkipped;
+    log(`  ${store.name}: skipped ${skipped} listings with no price or missing details (e.g. ${c.year} ${c.make} ${c.model} price ${c.price})`);
   }
   return cars;
 }
@@ -196,14 +230,14 @@ export async function run({
   for (const store of config.stores) {
     const out = { name: store.name, city: store.city, state: store.state, dealerId: "", cars: [], error: "" };
     try {
-      const id = await findDealerId(api, store);
+      const id = await findDealerId(api, store, log);
       if (!id) throw new Error("Could not find this store in MarketCheck. Check its website and nameWords in stores.json.");
       if (store.dealerId !== id) {
         store.dealerId = id;
         configChanged = true;
       }
       out.dealerId = id;
-      out.cars = await loadInventory(api, id);
+      out.cars = await loadInventory(api, id, store, log);
       log(`${store.name}: ${out.cars.length} cars`);
     } catch (err) {
       // Keep showing yesterday's cars rather than an empty store.

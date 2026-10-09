@@ -80,7 +80,7 @@ async function setup() {
 test("finds the cheaper identical car and skips non-matches and sister stores", async () => {
   const { storesPath, resultsPath } = await setup();
   const seen = [];
-  const api = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", fetchImpl: fakeFetch(seen) });
+  const api = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch(seen) });
   const results = await run({ api, storesPath, resultsPath, log: () => {} });
 
   const chevy = results.stores.find((s) => s.name === "Morlan Chevrolet");
@@ -111,11 +111,11 @@ test("finds the cheaper identical car and skips non-matches and sister stores", 
 
 test("a second run the same day reuses answers instead of spending API calls", async () => {
   const { storesPath, resultsPath } = await setup();
-  const first = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", fetchImpl: fakeFetch([]) });
+  const first = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch([]) });
   await run({ api: first, storesPath, resultsPath, log: () => {} });
 
   const seen = [];
-  const second = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", fetchImpl: fakeFetch(seen) });
+  const second = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch(seen) });
   const results = await run({ api: second, storesPath, resultsPath, log: () => {} });
   assert.equal(results.checkedThisRun, 0);
   assert.equal(seen.filter((p) => p.price_range).length, 0);
@@ -125,10 +125,10 @@ test("a second run the same day reuses answers instead of spending API calls", a
 
 test("a store that fails keeps yesterday's cars and never leaks the key", async () => {
   const { storesPath, resultsPath } = await setup();
-  await run({ api: makeApi({ apiKey: "SECRET", base: "https://fake.test/v2", fetchImpl: fakeFetch([]) }), storesPath, resultsPath, log: () => {} });
+  await run({ api: makeApi({ apiKey: "SECRET", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch([]) }), storesPath, resultsPath, log: () => {} });
 
   const broken = async () => ({ ok: false, status: 429, text: async () => "quota used up for key SECRET" });
-  const results = await run({ api: makeApi({ apiKey: "SECRET", base: "https://fake.test/v2", fetchImpl: broken }), storesPath, resultsPath, log: () => {} });
+  const results = await run({ api: makeApi({ apiKey: "SECRET", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: broken }), storesPath, resultsPath, log: () => {} });
   assert.equal(results.stores[0].cars.length, 2);
   assert.match(results.stores[0].error, /429/);
   assert.doesNotMatch(await readFile(resultsPath, "utf8"), /SECRET/);
@@ -141,4 +141,34 @@ test("same-car rules", () => {
   assert.ok(!isSameCar(base, { ...base, trim: "Lariat" }));
   assert.ok(!isSameCar(base, { ...base, year: 2020 }));
   assert.ok(!isSameCar(base, { ...base, drivetrain: "RWD" }));
+});
+
+test("waits and tries again when MarketCheck says slow down", async () => {
+  let tries = 0;
+  const flaky = async () => {
+    tries++;
+    if (tries < 3) return { ok: false, status: 429, text: async () => "API rate limit exceeded" };
+    return { ok: true, status: 200, json: async () => ({ num_found: 0, listings: [] }) };
+  };
+  const api = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [1, 1, 1], fetchImpl: flaky });
+  const r = await api.search({ make: "Ford" });
+  assert.equal(tries, 3);
+  assert.equal(r.num_found, 0);
+
+  tries = -10;
+  const giveUp = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [1, 1], fetchImpl: flaky });
+  await assert.rejects(giveUp.search({ make: "Ford" }), /429/);
+});
+
+test("spaces out calls", async () => {
+  const times = [];
+  const ok = async () => {
+    times.push(Date.now());
+    return { ok: true, status: 200, json: async () => ({ listings: [] }) };
+  };
+  const api = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 50, retryWaitsMs: [], fetchImpl: ok });
+  await api.search({});
+  await api.search({});
+  await api.search({});
+  assert.ok(times[2] - times[0] >= 95, `calls were ${times[2] - times[0]}ms apart`);
 });
