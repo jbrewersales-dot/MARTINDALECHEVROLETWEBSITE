@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-09T20:11:36.215Z",
+ "updatedAt": "2026-10-09T20:55:07.588Z",
  "radiusMiles": 100,
  "checkedThisRun": 0,
  "waitingToBeChecked": 0,
- "apiCalls": 26,
+ "apiCalls": 10,
  "warning": "",
  "stores": [
   {
@@ -12,7 +12,7 @@
    "state": "MO",
    "dealerId": "1018275",
    "cars": [],
-   "error": "MarketCheck said 422 for /search/car/active: {\"code\":422,\"message\":\"Subscribed package pagination limit of 500 rows exceeded\"}"
+   "error": "MarketCheck said 429 for /search/car/active: {\"message\": \"Monthly API quota exhausted\"}"
   },
   {
    "name": "Morlan Nissan",
@@ -20,7 +20,7 @@
    "state": "MO",
    "dealerId": "1075492",
    "cars": [],
-   "error": "MarketCheck said 422 for /search/car/active: {\"code\":422,\"message\":\"Subscribed package pagination limit of 500 rows exceeded\"}"
+   "error": "MarketCheck said 429 for /search/car/active: {\"message\": \"Monthly API quota exhausted\"}"
   },
   {
    "name": "Morlan Ford Lincoln",
@@ -28,7 +28,7 @@
    "state": "MO",
    "dealerId": "1013739",
    "cars": [],
-   "error": "MarketCheck said 422 for /search/car/active: {\"code\":422,\"message\":\"Subscribed package pagination limit of 500 rows exceeded\"}"
+   "error": "MarketCheck said 429 for /search/car/active: {\"message\": \"Monthly API quota exhausted\"}"
   },
   {
    "name": "Morlan Dodge",
@@ -36,15 +36,7 @@
    "state": "MO",
    "dealerId": "1013722",
    "cars": [],
-   "error": "MarketCheck said 422 for /search/car/active: {\"code\":422,\"message\":\"Subscribed package pagination limit of 500 rows exceeded\"}"
-  },
-  {
-   "name": "John Morlan Chrysler Dodge Jeep Ram",
-   "city": "Anna",
-   "state": "IL",
-   "dealerId": "",
-   "cars": [],
-   "error": "Could not find this store in MarketCheck near Anna, IL. Dealers there: Jp Sides Ford (Anna, IL) id 11046538; Jp Sides Chevrolet (Anna, IL) id 11049731"
+   "error": "MarketCheck said 429 for /search/car/active: {\"message\": \"Monthly API quota exhausted\"}"
   }
  ]
 }
