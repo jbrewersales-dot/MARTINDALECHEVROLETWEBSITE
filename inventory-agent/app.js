@@ -187,7 +187,8 @@ async function load() {
   $("radius").textContent = data.radiusMiles || 550;
   $("updated").textContent = data.updatedAt
     ? `Last updated ${new Date(data.updatedAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}` +
-      (data.waitingToBeChecked ? ` · ${data.waitingToBeChecked} cars still waiting to be checked` : "")
+      (data.waitingToBeChecked ? ` · ${data.waitingToBeChecked} cars still waiting to be checked` : "") +
+      (data.usage?.budget ? ` · ${data.usage.calls.toLocaleString("en-US")} of ${data.usage.budget.toLocaleString("en-US")} lookups used this month` : "")
     : "Not run yet. The list fills in after the first daily run.";
 
   cars = [];

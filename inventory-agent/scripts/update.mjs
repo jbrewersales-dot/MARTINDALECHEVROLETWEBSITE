@@ -22,7 +22,10 @@ const lower = (s) => String(s ?? "").trim().toLowerCase();
 
 function nameFits(dealer, store) {
   const name = lower(dealer?.name);
-  return store.nameWords.every((w) => name.includes(lower(w)));
+  return (
+    store.nameWords.every((w) => name.includes(lower(w))) &&
+    !(store.nameWordsNot || []).some((w) => name.includes(lower(w)))
+  );
 }
 
 function cityFits(dealer, store) {
@@ -75,10 +78,12 @@ export function isSameCar(ours, other) {
 // them out and wait and retry when it happens anyway.
 export function makeApi({ apiKey, base = DEFAULT_BASE, fetchImpl = fetch, minGapMs = 400, retryWaitsMs = [2000, 5000, 15000, 30000] }) {
   let calls = 0;
+  let limit = Infinity;
   let lastCall = 0;
   let rateLimitedInARow = 0;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   async function get(endpoint, params) {
+    if (calls >= limit) throw new BudgetError(`Reached today's share of the monthly lookup budget (${limit} calls). The rest wait for tomorrow.`);
     const url = new URL(base.replace(/\/$/, "") + endpoint);
     url.searchParams.set("api_key", apiKey);
     for (const [k, v] of Object.entries(params)) {
@@ -113,6 +118,9 @@ export function makeApi({ apiKey, base = DEFAULT_BASE, fetchImpl = fetch, minGap
     search: (params) => get("/search/car/active", params),
     get calls() {
       return calls;
+    },
+    setLimit(n) {
+      limit = n;
     },
   };
 }
@@ -200,6 +208,8 @@ function dealersIn(listings) {
 
 export class RadiusLimitError extends Error {}
 export class QuotaError extends Error {}
+// Our own monthly budget ran out for today. Handled like a used-up quota.
+export class BudgetError extends QuotaError {}
 
 async function findCheaper(api, car, store, settings, morlanDealerIds) {
   const params = {
@@ -251,6 +261,7 @@ export async function run({
     maxCarsCheckedPerRun: config.maxCarsCheckedPerRun ?? 400,
     recheckAfterDays: config.recheckAfterDays ?? 3,
     maxApiCallsPerRun: config.maxApiCallsPerRun ?? 1000,
+    monthlyCallBudget: config.monthlyCallBudget ?? Infinity,
   };
 
   let previous = { stores: [] };
@@ -259,6 +270,17 @@ export async function run({
   } catch {
     // First run - nothing saved yet.
   }
+  // Spread the monthly budget over the days left in the month, so an early
+  // run can't spend it all. Calls not used today carry over to later days.
+  const month = now.toISOString().slice(0, 7);
+  const usedBefore = previous.usage?.month === month ? previous.usage.calls || 0 : 0;
+  const remaining = Math.max(0, settings.monthlyCallBudget - usedBefore);
+  const daysInMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate();
+  const daysLeft = daysInMonth - now.getUTCDate() + 1;
+  const todaysShare = Math.min(settings.maxApiCallsPerRun, Math.floor(remaining / daysLeft));
+  api.setLimit?.(todaysShare);
+  log(`Budget: ${usedBefore} of ${settings.monthlyCallBudget} lookups used this month; up to ${todaysShare} today.`);
+
   const previousByVin = new Map();
   for (const s of previous.stores || []) for (const c of s.cars || []) previousByVin.set(c.vin, c);
 
@@ -266,14 +288,17 @@ export async function run({
   let configChanged = false;
   const stores = [];
   const scans = new Map();
-  let quotaHit = "";
+  let quotaHit = ""; // MarketCheck refused: shown as a warning
+  let budgetHit = false; // our own daily share ran out: not an error
   for (const store of config.stores) {
-    if (quotaHit) {
-      const old = (previous.stores || []).find((s) => s.name === store.name);
-      stores.push({ out: { name: store.name, city: store.city, state: store.state, dealerId: store.dealerId || "", cars: old?.cars || [], error: quotaHit }, store });
+    const old = (previous.stores || []).find((s) => s.name === store.name);
+    const out = { name: store.name, city: store.city, state: store.state, dealerId: "", cars: [], error: "" };
+    if (quotaHit || budgetHit) {
+      // Keep showing yesterday's cars rather than an empty store.
+      Object.assign(out, { cars: old?.cars || [], dealerId: store.dealerId || old?.dealerId || "", error: quotaHit });
+      stores.push({ out, store });
       continue;
     }
-    const out = { name: store.name, city: store.city, state: store.state, dealerId: "", cars: [], error: "" };
     try {
       const listings = await scanArea(api, store, scans, log);
       const id = pickDealer(listings, store);
@@ -291,12 +316,13 @@ export async function run({
       const name = listings.find((l) => String(l.dealer?.id) === id)?.dealer;
       log(`${store.name}: ${out.cars.length} cars (${dealerLabel(name)})`);
     } catch (err) {
-      if (err instanceof QuotaError) quotaHit = err.message;
-      // Keep showing yesterday's cars rather than an empty store.
-      const old = (previous.stores || []).find((s) => s.name === store.name);
-      out.cars = old?.cars || [];
-      out.dealerId = out.dealerId || old?.dealerId || "";
-      out.error = err.message;
+      if (err instanceof BudgetError) budgetHit = true;
+      else if (err instanceof QuotaError) quotaHit = err.message;
+      Object.assign(out, {
+        cars: old?.cars || [],
+        dealerId: out.dealerId || store.dealerId || old?.dealerId || "",
+        error: budgetHit ? "" : err.message,
+      });
       log(`${store.name}: ${err.message}`);
     }
     stores.push({ out, store });
@@ -328,17 +354,17 @@ export async function run({
   const todo = queue.slice(0, settings.maxCarsCheckedPerRun);
   let checked = 0;
   let warning = quotaHit;
-  for (const { car, store } of quotaHit ? [] : todo) {
-    if (api.calls >= settings.maxApiCallsPerRun) {
-      log(`Stopping at ${api.calls} API calls (maxApiCallsPerRun). The rest wait for the next run.`);
-      break;
-    }
+  for (const { car, store } of quotaHit || budgetHit ? [] : todo) {
     if (checked && checked % 50 === 0) log(`  ...${checked} cars checked`);
     try {
       car.matches = await findCheaper(api, car, store, settings, morlanDealerIds);
       car.checkedAt = now.toISOString();
       checked++;
     } catch (err) {
+      if (err instanceof BudgetError) {
+        log(err.message);
+        break;
+      }
       if (err instanceof QuotaError) {
         warning = err.message;
         log(warning);
@@ -360,6 +386,7 @@ export async function run({
     checkedThisRun: checked,
     waitingToBeChecked: queue.length - checked,
     apiCalls: api.calls,
+    usage: { month, calls: usedBefore + api.calls, budget: Number.isFinite(settings.monthlyCallBudget) ? settings.monthlyCallBudget : null },
     warning,
     stores: stores.map(({ out }) => out),
   };

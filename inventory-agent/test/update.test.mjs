@@ -267,3 +267,58 @@ test("a used-up monthly quota stops the run on the first answer", async () => {
   assert.match(results.warning, /used up/);
   assert.match(results.stores[1].error, /used up/);
 });
+
+test("monthly budget: each day gets an even share of what's left, and usage carries over", async () => {
+  const { storesPath, resultsPath } = await setup();
+  const cfg = JSON.parse(await readFile(storesPath, "utf8"));
+  cfg.monthlyCallBudget = 300; // 30 days in June -> 10 a day
+  await writeFile(storesPath, JSON.stringify(cfg));
+  const seen = [];
+  const api = makeApi({ apiKey: "K", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch(seen) });
+  const first = await run({ api, storesPath, resultsPath, now: new Date("2026-06-01T12:00:00Z"), log: () => {} });
+  assert.ok(seen.length <= 10, `used ${seen.length}`);
+  assert.deepEqual(first.usage, { month: "2026-06", calls: seen.length, budget: 300 });
+
+  // Last day of the month: everything left may be spent.
+  const seen2 = [];
+  const api2 = makeApi({ apiKey: "K", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch(seen2) });
+  const last = await run({ api: api2, storesPath, resultsPath, now: new Date("2026-06-30T12:00:00Z"), log: () => {} });
+  assert.equal(last.usage.calls, seen.length + seen2.length);
+
+  // A new month starts the count over.
+  const api3 = makeApi({ apiKey: "K", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch([]) });
+  const july = await run({ api: api3, storesPath, resultsPath, now: new Date("2026-07-01T12:00:00Z"), log: () => {} });
+  assert.equal(july.usage.month, "2026-07");
+  assert.equal(july.usage.calls, api3.calls);
+});
+
+test("a spent budget makes no calls, keeps the cars, and shows no error", async () => {
+  const { storesPath, resultsPath } = await setup();
+  await run({ api: makeApi({ apiKey: "K", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch([]) }), storesPath, resultsPath, now: new Date("2026-06-10T12:00:00Z"), log: () => {} });
+  const cfg = JSON.parse(await readFile(storesPath, "utf8"));
+  cfg.monthlyCallBudget = 1; // already over
+  await writeFile(storesPath, JSON.stringify(cfg));
+  const seen = [];
+  const results = await run({ api: makeApi({ apiKey: "K", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch(seen) }), storesPath, resultsPath, now: new Date("2026-06-11T12:00:00Z"), log: () => {} });
+  assert.equal(seen.length, 0);
+  assert.equal(results.stores[0].cars.length, 2);
+  assert.equal(results.stores[0].error, "");
+  assert.equal(results.warning, "");
+});
+
+test("nameWordsNot tells two 'Autry Morlan' stores in one town apart", async () => {
+  const { storesPath, resultsPath } = await setup();
+  const cfg = JSON.parse(await readFile(storesPath, "utf8"));
+  cfg.stores = [{ name: "Autry Morlan Chevrolet", nameWords: ["Morlan"], nameWordsNot: ["Dodge", "Ford"], city: "Sikeston", state: "MO", latitude: 36.9, longitude: -89.6, dealerId: "" }];
+  await writeFile(storesPath, JSON.stringify(cfg));
+  const dodge = listing({ vin: "D1", price: 30000, make: "Ram", model: "1500", dealerId: 1013722, dealerName: "Autry Morlan Dodge Chrysler Jeep Ram Sikeston", city: "Sikeston" });
+  const chevy = listing({ vin: "C1", price: 30000, dealerId: 4444, dealerName: "Autry Morlan", city: "Sikeston" });
+  const area = async (url) => {
+    const p = Object.fromEntries(new URL(url).searchParams);
+    const listings = p.radius === "10" ? [dodge, chevy] : [];
+    return { ok: true, json: async () => ({ num_found: listings.length, listings }) };
+  };
+  const results = await run({ api: makeApi({ apiKey: "K", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: area }), storesPath, resultsPath, log: () => {} });
+  assert.equal(results.stores[0].dealerId, "4444");
+  assert.deepEqual(results.stores[0].cars.map((c) => c.vin), ["C1"]);
+});
