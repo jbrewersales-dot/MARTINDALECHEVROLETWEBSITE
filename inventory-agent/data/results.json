@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-09T20:02:11.543Z",
+ "updatedAt": "2026-10-09T20:06:00.197Z",
  "radiusMiles": 550,
  "checkedThisRun": 0,
  "waitingToBeChecked": 0,
- "apiCalls": 12,
+ "apiCalls": 35,
  "stores": [
   {
    "name": "Morlan Chevrolet",
@@ -17,25 +17,25 @@
    "name": "Morlan Nissan",
    "city": "Dexter",
    "state": "MO",
-   "dealerId": "",
+   "dealerId": "1075492",
    "cars": [],
-   "error": "MarketCheck said 429 for /search/car/active: {\"message\": \"API rate limit exceeded\"}"
+   "error": ""
   },
   {
    "name": "Morlan Ford Lincoln",
    "city": "Sikeston",
    "state": "MO",
-   "dealerId": "",
+   "dealerId": "1013739",
    "cars": [],
-   "error": "MarketCheck said 429 for /search/car/active: {\"message\": \"API rate limit exceeded\"}"
+   "error": ""
   },
   {
    "name": "Morlan Dodge",
    "city": "Sikeston",
    "state": "MO",
-   "dealerId": "",
+   "dealerId": "1013722",
    "cars": [],
-   "error": "MarketCheck said 429 for /search/car/active: {\"message\": \"API rate limit exceeded\"}"
+   "error": ""
   },
   {
    "name": "John Morlan Chrysler Dodge Jeep Ram",
@@ -43,7 +43,7 @@
    "state": "MO",
    "dealerId": "",
    "cars": [],
-   "error": "MarketCheck said 429 for /search/car/active: {\"message\": \"API rate limit exceeded\"}"
+   "error": "Could not find this store in MarketCheck. Check its website and nameWords in stores.json."
   }
  ]
 }
