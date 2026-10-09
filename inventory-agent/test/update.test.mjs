@@ -216,3 +216,40 @@ test("a busy area is split into price bands to get past the 500 row paging limit
   assert.equal(chevy.error, "");
   assert.equal(chevy.cars.length, 300);
 });
+
+test("if MarketCheck ignores the price filter, the scan stops instead of splitting forever", async () => {
+  const { storesPath, resultsPath } = await setup();
+  const area = [];
+  for (let i = 0; i < 700; i++) area.push(listing({ vin: `V${i}`, price: 9000 + i, dealerId: i % 2 ? 111 : 600, dealerName: i % 2 ? "Autry Morlan Chevrolet" : "Other Lot", city: "Dexter" }));
+  let calls = 0;
+  const ignores = async (url) => {
+    const p = Object.fromEntries(new URL(url).searchParams);
+    if (p.radius === "10") calls++;
+    if (p.radius !== "10") return { ok: true, json: async () => ({ num_found: 0, listings: [] }) };
+    const start = Number(p.start || 0);
+    const rows = Number(p.rows || 10);
+    return { ok: true, json: async () => ({ num_found: area.length, listings: area.slice(start, start + rows) }) };
+  };
+  const api = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: ignores });
+  const results = await run({ api, storesPath, resultsPath, log: () => {} });
+  assert.ok(calls < 40, `used ${calls} area calls`);
+  assert.equal(results.stores[0].cars.length, 250);
+});
+
+test("gives up and saves when the plan's lookups are used up", async () => {
+  const { storesPath, resultsPath } = await setup();
+  await run({ api: makeApi({ apiKey: "K", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch([]) }), storesPath, resultsPath, now: new Date("2026-01-01"), log: () => {} });
+  let calls = 0;
+  const quota = async (url) => {
+    const p = Object.fromEntries(new URL(url).searchParams);
+    if (p.sort_by) {
+      calls++;
+      return { ok: false, status: 429, text: async () => "API rate limit exceeded" };
+    }
+    return fakeFetch([])(url);
+  };
+  const api = makeApi({ apiKey: "K", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: quota });
+  const results = await run({ api, storesPath, resultsPath, log: () => {} });
+  assert.equal(calls, 3);
+  assert.match(results.warning, /rate limit/);
+});

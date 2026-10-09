@@ -4,6 +4,7 @@
   "usedMilesWindow": 15000,
   "maxCarsCheckedPerRun": 400,
   "recheckAfterDays": 3,
+  "maxApiCallsPerRun": 1000,
   "stores": [
     {
       "name": "Morlan Chevrolet",

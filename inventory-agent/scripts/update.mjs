@@ -76,6 +76,7 @@ export function isSameCar(ours, other) {
 export function makeApi({ apiKey, base = DEFAULT_BASE, fetchImpl = fetch, minGapMs = 400, retryWaitsMs = [2000, 5000, 15000, 30000] }) {
   let calls = 0;
   let lastCall = 0;
+  let rateLimitedInARow = 0;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   async function get(endpoint, params) {
     const url = new URL(base.replace(/\/$/, "") + endpoint);
@@ -93,6 +94,11 @@ export function makeApi({ apiKey, base = DEFAULT_BASE, fetchImpl = fetch, minGap
       if (res.status !== 429 || attempt >= retryWaitsMs.length) break;
       await sleep(retryWaitsMs[attempt]);
     }
+    if (res.status === 429) {
+      if (++rateLimitedInARow >= 3) {
+        throw new QuotaError("MarketCheck keeps saying the rate limit is exceeded. The plan's daily or monthly lookups may be used up.");
+      }
+    } else rateLimitedInARow = 0;
     if (!res.ok) {
       // The results file is public, so never let the key leak into it.
       const body = (await res.text()).split(apiKey).join("***").slice(0, 300);
@@ -119,21 +125,33 @@ const MAX_PRICE = 500000;
 // this. Plans also stop paging after PAGE_LIMIT rows, so a busy area is split
 // into price bands small enough to page all the way through. Stores in the
 // same town share one scan.
-async function scanArea(api, store, cache) {
+async function scanArea(api, store, cache, log) {
   const key = `${store.latitude},${store.longitude}`;
   if (!cache.has(key)) {
     const area = { latitude: store.latitude, longitude: store.longitude, radius: SCAN_RADIUS_MILES };
-    cache.set(key, scanBand(api, area, 1, MAX_PRICE));
+    cache.set(key, scanBand(api, area, 1, MAX_PRICE, log));
   }
   return cache.get(key);
 }
 
-async function scanBand(api, area, lo, hi) {
+async function scanBand(api, area, lo, hi, log, filterWorks) {
   const first = await api.search({ ...area, price_range: `${lo}-${hi}`, rows: PAGE_SIZE, start: 0 });
   const found = first.num_found ?? 0;
   if (found > PAGE_LIMIT && hi > lo) {
-    const mid = Math.floor((lo + hi) / 2);
-    return [...(await scanBand(api, area, lo, mid)), ...(await scanBand(api, area, mid + 1, hi))];
+    if (filterWorks === undefined) {
+      // Make sure MarketCheck honors price_range before splitting on it, or
+      // the splitting would never end: nothing is priced above MAX_PRICE.
+      const none = await api.search({ ...area, price_range: `${MAX_PRICE + 1}-${MAX_PRICE * 10}`, rows: 1 });
+      filterWorks = (none.num_found ?? 0) < found;
+      if (!filterWorks) log(`  Price filter is ignored; only the first ${PAGE_LIMIT} of ${found} listings in this area are used.`);
+    }
+    if (filterWorks) {
+      const mid = Math.floor((lo + hi) / 2);
+      return [
+        ...(await scanBand(api, area, lo, mid, log, true)),
+        ...(await scanBand(api, area, mid + 1, hi, log, true)),
+      ];
+    }
   }
   const all = [...(first.listings || [])];
   for (let start = PAGE_SIZE; start < Math.min(found, PAGE_LIMIT); start += PAGE_SIZE) {
@@ -178,6 +196,7 @@ function dealersIn(listings) {
 }
 
 export class RadiusLimitError extends Error {}
+export class QuotaError extends Error {}
 
 async function findCheaper(api, car, store, settings, morlanDealerIds) {
   const params = {
@@ -228,6 +247,7 @@ export async function run({
     usedMilesWindow: config.usedMilesWindow ?? 15000,
     maxCarsCheckedPerRun: config.maxCarsCheckedPerRun ?? 400,
     recheckAfterDays: config.recheckAfterDays ?? 3,
+    maxApiCallsPerRun: config.maxApiCallsPerRun ?? 1000,
   };
 
   let previous = { stores: [] };
@@ -246,7 +266,7 @@ export async function run({
   for (const store of config.stores) {
     const out = { name: store.name, city: store.city, state: store.state, dealerId: "", cars: [], error: "" };
     try {
-      const listings = await scanArea(api, store, scans);
+      const listings = await scanArea(api, store, scans, log);
       const id = pickDealer(listings, store);
       if (!id) {
         throw new Error(
@@ -299,11 +319,21 @@ export async function run({
   let checked = 0;
   let warning = "";
   for (const { car, store } of todo) {
+    if (api.calls >= settings.maxApiCallsPerRun) {
+      log(`Stopping at ${api.calls} API calls (maxApiCallsPerRun). The rest wait for the next run.`);
+      break;
+    }
+    if (checked && checked % 50 === 0) log(`  ...${checked} cars checked`);
     try {
       car.matches = await findCheaper(api, car, store, settings, morlanDealerIds);
       car.checkedAt = now.toISOString();
       checked++;
     } catch (err) {
+      if (err instanceof QuotaError) {
+        warning = err.message;
+        log(warning);
+        break;
+      }
       if (err instanceof RadiusLimitError) {
         // Every other car would fail the same way, so stop spending calls.
         warning = `Your MarketCheck plan doesn't allow a ${settings.searchRadiusMiles} mile search. Lower searchRadiusMiles in stores.json or upgrade the plan. (${err.message})`;
