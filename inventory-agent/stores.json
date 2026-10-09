@@ -60,20 +60,6 @@
       "latitude": 36.8762,
       "longitude": -89.5878,
       "dealerId": "1013722"
-    },
-    {
-      "name": "John Morlan Chrysler Dodge Jeep Ram",
-      "website": "",
-      "nameWords": [
-        "Morlan",
-        "Jeep"
-      ],
-      "city": "Anna",
-      "state": "IL",
-      "zip": "62906",
-      "latitude": 37.4603,
-      "longitude": -89.247,
-      "dealerId": ""
     }
   ]
 }

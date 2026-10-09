@@ -110,33 +110,39 @@ export function makeApi({ apiKey, base = DEFAULT_BASE, fetchImpl = fetch, minGap
 
 const dealerLabel = (d) => `${d?.name || "?"} (${d?.city || "?"}, ${d?.state || "?"}) id ${d?.id ?? "?"}`;
 const SCAN_RADIUS_MILES = 10;
-const MAX_SCAN = 3000;
+const PAGE_LIMIT = 500; // most rows a MarketCheck plan will page through
+const MAX_PRICE = 500000;
 
 // Every listing within a few miles of a store. On some MarketCheck plans a
 // search by dealer_id or website only returns a count with no cars, while a
 // search by location returns the cars, so the store's cars are picked out of
-// this. Stores in the same town share one scan.
+// this. Plans also stop paging after PAGE_LIMIT rows, so a busy area is split
+// into price bands small enough to page all the way through. Stores in the
+// same town share one scan.
 async function scanArea(api, store, cache) {
   const key = `${store.latitude},${store.longitude}`;
   if (!cache.has(key)) {
-    cache.set(key, (async () => {
-      const all = [];
-      for (let start = 0; start < MAX_SCAN; start += PAGE_SIZE) {
-        const r = await api.search({
-          latitude: store.latitude,
-          longitude: store.longitude,
-          radius: SCAN_RADIUS_MILES,
-          rows: PAGE_SIZE,
-          start,
-        });
-        const listings = r.listings || [];
-        all.push(...listings);
-        if (listings.length < PAGE_SIZE || start + PAGE_SIZE >= (r.num_found ?? 0)) break;
-      }
-      return all;
-    })());
+    const area = { latitude: store.latitude, longitude: store.longitude, radius: SCAN_RADIUS_MILES };
+    cache.set(key, scanBand(api, area, 1, MAX_PRICE));
   }
   return cache.get(key);
+}
+
+async function scanBand(api, area, lo, hi) {
+  const first = await api.search({ ...area, price_range: `${lo}-${hi}`, rows: PAGE_SIZE, start: 0 });
+  const found = first.num_found ?? 0;
+  if (found > PAGE_LIMIT && hi > lo) {
+    const mid = Math.floor((lo + hi) / 2);
+    return [...(await scanBand(api, area, lo, mid)), ...(await scanBand(api, area, mid + 1, hi))];
+  }
+  const all = [...(first.listings || [])];
+  for (let start = PAGE_SIZE; start < Math.min(found, PAGE_LIMIT); start += PAGE_SIZE) {
+    const r = await api.search({ ...area, price_range: `${lo}-${hi}`, rows: PAGE_SIZE, start });
+    const listings = r.listings || [];
+    all.push(...listings);
+    if (listings.length < PAGE_SIZE) break;
+  }
+  return all;
 }
 
 // Which dealer in the scan is this store: the saved id if it has cars here,

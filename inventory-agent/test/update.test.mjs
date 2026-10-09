@@ -96,6 +96,7 @@ test("finds the cheaper identical car and skips non-matches and sister stores", 
   assert.equal(seen.filter((p) => p.radius === "10").length, 2, "one area scan per town");
   assert.equal(compSearch.miles_range, "15000-45000");
   assert.equal(compSearch.price_range, "1-39999");
+  assert.equal(compSearch.sort_by, "price");
 
   // New cars search new cars and don't use a mileage window.
   const tahoeSearch = seen.find((p) => p.model === "Tahoe");
@@ -116,7 +117,7 @@ test("a second run the same day reuses answers instead of spending API calls", a
   const second = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: fakeFetch(seen) });
   const results = await run({ api: second, storesPath, resultsPath, log: () => {} });
   assert.equal(results.checkedThisRun, 0);
-  assert.equal(seen.filter((p) => p.price_range).length, 0);
+  assert.equal(seen.filter((p) => p.sort_by).length, 0);
   const truck = results.stores[0].cars.find((c) => c.vin === "OURTRUCK");
   assert.equal(truck.matches.length, 2);
 });
@@ -176,7 +177,7 @@ test("stops checking and says so when the plan's radius is too small", async () 
   let priceChecks = 0;
   const limited = async (url) => {
     const p = Object.fromEntries(new URL(url).searchParams);
-    if (p.price_range) {
+    if (p.sort_by) {
       priceChecks++;
       return { ok: false, status: 422, text: async () => '{"code":422,"message":"Subscribed package radius limit of 100 miles exceeded"}' };
     }
@@ -187,4 +188,31 @@ test("stops checking and says so when the plan's radius is too small", async () 
   assert.equal(priceChecks, 1);
   assert.match(results.warning, /100 miles/);
   assert.equal(results.stores[0].cars.length, 2, "cars still listed");
+});
+
+test("a busy area is split into price bands to get past the 500 row paging limit", async () => {
+  const { storesPath, resultsPath } = await setup();
+  // 1,200 cars around Dexter, 300 of them Morlan Chevrolet's.
+  const area = [];
+  for (let i = 0; i < 1200; i++) {
+    const mine = i % 4 === 0;
+    area.push(listing({ vin: `V${i}`, price: 5000 + i * 37, dealerId: mine ? 111 : 600 + (i % 7), dealerName: mine ? "Autry Morlan Chevrolet" : "Other Lot", city: "Dexter" }));
+  }
+  const strict = async (url) => {
+    const p = Object.fromEntries(new URL(url).searchParams);
+    if (p.radius === "10") {
+      const start = Number(p.start || 0);
+      const rows = Number(p.rows || 10);
+      if (start + rows > 500) return { ok: false, status: 422, text: async () => "Subscribed package pagination limit of 500 rows exceeded" };
+      const [lo, hi] = (p.price_range || "0-99999999").split("-").map(Number);
+      const hits = area.filter((l) => l.price >= lo && l.price <= hi);
+      return { ok: true, json: async () => ({ num_found: hits.length, listings: hits.slice(start, start + rows) }) };
+    }
+    return { ok: true, json: async () => ({ num_found: 0, listings: [] }) };
+  };
+  const api = makeApi({ apiKey: "KEY", base: "https://fake.test/v2", minGapMs: 0, retryWaitsMs: [], fetchImpl: strict });
+  const results = await run({ api, storesPath, resultsPath, log: () => {} });
+  const chevy = results.stores.find((s) => s.name === "Morlan Chevrolet");
+  assert.equal(chevy.error, "");
+  assert.equal(chevy.cars.length, 300);
 });
