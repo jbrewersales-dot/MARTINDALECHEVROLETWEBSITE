@@ -1,12 +1,12 @@
 {
- "updatedAt": "2026-10-11T10:48:33.603Z",
+ "updatedAt": "2026-10-12T20:17:47.972Z",
  "radiusMiles": 100,
- "checkedThisRun": 507,
+ "checkedThisRun": 0,
  "waitingToBeChecked": 0,
- "apiCalls": 541,
+ "apiCalls": 1,
  "usage": {
   "month": "2026-10",
-  "calls": 541,
+  "calls": 542,
   "budget": 2000
  },
  "warning": "",
@@ -909,7 +909,7 @@
      "checkedAt": "2026-10-11T10:48:33.603Z"
     }
    ],
-   "error": ""
+   "error": "MarketCheck said 403 for /search/car/active: {\n  \"message\":\"Your IP address is not allowed\"\n}"
   },
   {
    "name": "Morlan Ford Lincoln",
@@ -24351,7 +24351,7 @@
      "checkedAt": "2026-10-11T10:48:33.603Z"
     }
    ],
-   "error": ""
+   "error": "MarketCheck said 403 for /search/car/active: {\n  \"message\":\"Your IP address is not allowed\"\n}"
   },
   {
    "name": "Morlan Dodge",
@@ -43405,7 +43405,7 @@
      "checkedAt": "2026-10-11T10:48:33.603Z"
     }
    ],
-   "error": ""
+   "error": "MarketCheck said 403 for /search/car/active: {\n  \"message\":\"Your IP address is not allowed\"\n}"
   }
  ]
 }
