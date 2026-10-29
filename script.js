@@ -47,6 +47,7 @@ form.addEventListener("submit", (e) => {
     `Email: ${d.email}`,
     `Phone: ${d.phone || "-"}`,
     `Interested in: ${d.product}`,
+    `Agrees to texts/calls: ${d.smsConsent ? "Yes" : "No"}`,
     "",
     d.message || "",
   ].join("\n");

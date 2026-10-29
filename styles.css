@@ -225,3 +225,23 @@ p { color: var(--muted); }
 }
 .intro-btn:hover { background: rgba(255,255,255,.22); }
 body.intro-open { overflow: hidden; }
+
+/* SMS consent checkbox */
+.demo-form label.consent { display: flex; align-items: flex-start; gap: 10px; font-weight: 400; font-size: .82rem; color: var(--muted); line-height: 1.5; }
+.demo-form label.consent input { margin-top: 3px; width: 18px; height: 18px; flex: none; padding: 0; }
+.footer-bottom a { color: #c3cfe2; text-decoration: underline; }
+
+/* Legal pages */
+.legal { padding: 60px 0 90px; }
+.legal h1 { margin-bottom: 6px; }
+.legal-date { font-size: .9rem; margin-bottom: 24px; }
+.legal h2 { font-size: 1.4rem; margin: 40px 0 12px; }
+.legal h3 { font-size: 1.05rem; margin: 22px 0 6px; }
+.legal p, .legal li { color: var(--ink); margin-bottom: 10px; }
+.legal ul { padding-left: 22px; margin-bottom: 10px; }
+.legal a { text-decoration: underline; }
+.legal-toc { display: grid; gap: 6px; background: var(--bg-alt); border-radius: var(--radius); padding: 20px 24px; margin: 24px 0; }
+.legal-toc a { text-decoration: none; }
+.legal-callout { background: #eafaf6; border-left: 4px solid var(--teal); border-radius: 10px; padding: 18px 20px; margin: 10px 0 16px; }
+.legal-callout p:last-child { margin-bottom: 0; }
+.legal-contact { font-style: normal; line-height: 1.8; }
