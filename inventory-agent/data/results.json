@@ -1,12 +1,12 @@
 {
- "updatedAt": "2026-11-09T21:26:19.399Z",
+ "updatedAt": "2026-11-16T21:01:50.733Z",
  "radiusMiles": 100,
  "checkedThisRun": 0,
  "waitingToBeChecked": 507,
  "apiCalls": 483,
  "usage": {
   "month": "2026-11",
-  "calls": 965,
+  "calls": 1448,
   "budget": 2000
  },
  "warning": "",
